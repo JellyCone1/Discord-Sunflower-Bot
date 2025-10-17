@@ -1,0 +1,10 @@
+Discord Local Error Handling:
+https://discordpy.readthedocs.io/en/stable/ext/commands/commands.html#error-handling
+
+ytdlp all opts:
+https://github.com/ytdl-org/youtube-dl/blob/master/youtube_dl/YoutubeDL.py#L128-L278
+
+next: ask the user to make sure whether they would like to continue with deletion of {limit} messages
+where limit is the max no. of messages that can be purged per command
+
+modularize the bot
