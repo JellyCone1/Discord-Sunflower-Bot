@@ -1,1 +1,5 @@
 .env
+tempCodeRunnerFile.py
+discord.log
+__pycache__/
+.vscode/
