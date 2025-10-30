@@ -1,0 +1,30 @@
+2025-10-31 00:11:25,856:INFO:discord.client: logging in using static token
+2025-10-31 00:11:27,768:INFO:discord.gateway: Shard ID None has connected to Gateway (Session ID: 5e29ae49cb7f762b27b80b5ef2ffab5a).
+2025-10-31 00:11:43,724:INFO:discord.voice_state: Connecting to voice...
+2025-10-31 00:11:43,724:INFO:discord.voice_state: Starting voice handshake... (connection attempt 1)
+2025-10-31 00:11:44,863:INFO:discord.voice_state: Voice handshake complete. Endpoint found: c-bom11-29175cde.discord.media:2083
+2025-10-31 00:11:45,156:INFO:discord.voice_state: Voice connection complete.
+2025-10-31 00:12:52,361:ERROR:discord.app_commands.tree: Ignoring exception in command tree
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\discord\app_commands\tree.py", line 1138, in wrapper
+    await self._call(interaction)
+  File "C:\Python311\Lib\site-packages\discord\app_commands\tree.py", line 1270, in _call
+    command, options = self._get_app_command_options(data)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\discord\app_commands\tree.py", line 1174, in _get_app_command_options
+    raise CommandNotFound(name, parents)
+discord.app_commands.errors.CommandNotFound: Application command 'stop' not found
+2025-10-31 00:13:00,988:INFO:discord.player: ffmpeg process 24872 has not terminated. Waiting to terminate...
+2025-10-31 00:13:00,992:INFO:discord.player: ffmpeg process 24872 should have terminated with a return code of 1.
+2025-10-31 00:14:05,027:INFO:discord.player: ffmpeg process 14184 has not terminated. Waiting to terminate...
+2025-10-31 00:14:05,032:INFO:discord.player: ffmpeg process 14184 should have terminated with a return code of 1.
+2025-10-31 00:14:28,295:INFO:discord.player: ffmpeg process 27552 has not terminated. Waiting to terminate...
+2025-10-31 00:14:28,299:INFO:discord.player: ffmpeg process 27552 should have terminated with a return code of 1.
+2025-10-31 00:14:29,294:INFO:discord.voice_state: The voice handshake is being terminated for Channel ID 1433522751880167454 (Guild ID 1413758461304508560)
+2025-10-31 00:14:55,978:INFO:discord.voice_state: Connecting to voice...
+2025-10-31 00:14:55,979:INFO:discord.voice_state: Starting voice handshake... (connection attempt 1)
+2025-10-31 00:14:56,606:INFO:discord.voice_state: Voice handshake complete. Endpoint found: c-bom06-dbdfffa8.discord.media:2087
+2025-10-31 00:14:56,891:INFO:discord.voice_state: Voice connection complete.
+2025-10-31 00:15:57,138:INFO:discord.player: ffmpeg process 17764 has not terminated. Waiting to terminate...
+2025-10-31 00:15:57,144:INFO:discord.player: ffmpeg process 17764 should have terminated with a return code of 1.
+2025-10-31 00:15:58,125:INFO:discord.voice_state: The voice handshake is being terminated for Channel ID 1413758462181113880 (Guild ID 1413758461304508560)
