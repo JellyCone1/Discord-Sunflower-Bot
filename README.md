@@ -26,7 +26,8 @@ Below are all the `{/}` commands which are available to use in this version.
 - `/pause` : Pause the current song
 - `/skip` : Skip the current playing song
 - `/resume`: Resume the paused song
-- `/stop`: End session and Disconnect Bot
+- `/clear`: Clear the queue and stop the currently playing media
+- `/disconnect`: Disconnect bot from same voice channel as the invoker
 
 ### ChangeLog:
 **v0.1.1** 
