@@ -248,7 +248,8 @@ class Ytdlp_handler(commands.Cog):
                 "options": "-vn -c:a libopus -b:a 96k",
             }
 
-            source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('bin', 'ffmpeg', 'ffmpeg.exe'))
+            # Uses the Default install path for `sudo apt-get install ffmpeg`
+            source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('/', 'usr', 'bin', 'ffmpeg'))
 
             def after_play(error):
                 if error:
