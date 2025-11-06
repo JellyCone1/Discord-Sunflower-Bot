@@ -1,2 +1,8 @@
-2025-11-03 20:29:32,554:INFO:discord.client: logging in using static token
-2025-11-03 20:29:34,501:INFO:discord.gateway: Shard ID None has connected to Gateway (Session ID: 7ccaab9c057a46172b123386d83ef633).
+2025-11-06 14:47:54,486:INFO:discord.client: logging in using static token
+2025-11-06 14:47:56,623:INFO:discord.gateway: Shard ID None has connected to Gateway (Session ID: 97953a41c6087496047d18496bf034d1).
+2025-11-06 14:48:13,135:INFO:discord.voice_state: Connecting to voice...
+2025-11-06 14:48:13,135:INFO:discord.voice_state: Starting voice handshake... (connection attempt 1)
+2025-11-06 14:48:13,703:INFO:discord.voice_state: Voice handshake complete. Endpoint found: c-bom11-1661614a.discord.media:2053
+2025-11-06 14:48:14,102:INFO:discord.voice_state: Voice connection complete.
+2025-11-06 14:48:43,741:INFO:discord.player: ffmpeg process 17740 successfully terminated with return code of 0.
+2025-11-06 14:49:40,682:INFO:discord.voice_state: The voice handshake is being terminated for Channel ID 1413758462181113880 (Guild ID 1413758461304508560)

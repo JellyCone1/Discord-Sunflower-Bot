@@ -248,7 +248,8 @@ class Ytdlp_handler(commands.Cog):
                 "options": "-vn -c:a libopus -b:a 96k",
             }
 
-            source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('bin', 'ffmpeg', 'ffmpeg.exe'))
+            source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('bin', 'ffmpeg', 'ffmpeg.exe'))  # Uncomment For Windows Systems
+            # source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('/', 'usr', 'bin', 'ffmpeg'))  # Uncomment For Linux Systems
 
             def after_play(error):
                 if error:
