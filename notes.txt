@@ -7,9 +7,11 @@ https://github.com/ytdl-org/youtube-dl/blob/master/youtube_dl/YoutubeDL.py#L128-
 next: ask the user to make sure whether they would like to continue with deletion of {limit} messages
 where limit is the max no. of messages that can be purged per command
 
-modularize the bot
+modularize the bot (Done)
 
 add a graceful shutdown
+
+fix the remove roles function
 
 install the nightly yt-dlp:
 python3 -m pip install -U --pre "yt-dlp[default]"
