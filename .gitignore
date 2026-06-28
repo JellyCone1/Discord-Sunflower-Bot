@@ -3,3 +3,10 @@ tempCodeRunnerFile.py
 discord.log
 __pycache__/
 .vscode/
+.venva/
+.venv/
+.idea/
+temp.py
+count-pixel.py
+memory/
+cookies.txt

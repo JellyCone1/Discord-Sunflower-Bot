@@ -1,4 +1,4 @@
-# Discord Sunflower Bot v0.1.0
+# Discord Sunflower Bot v0.1.1
 The repository for Hamsteria's Discord Server Custom Personal Bot for Moderation and Management.
 
 ## SAY HELLO TO SUNFLOWER! 🌻
@@ -26,4 +26,13 @@ Below are all the `{/}` commands which are available to use in this version.
 - `/pause` : Pause the current song
 - `/skip` : Skip the current playing song
 - `/resume`: Resume the paused song
-- `/stop`: End session and Disconnect Bot
+- `/clear`: Clear the queue and stop the currently playing media
+- `/disconnect`: Disconnect bot from same voice channel as the invoker
+
+### ChangeLog:
+**v0.1.1** 
+- Added {/}`disconnect` which disconnects the bot from the Voice Channel.
+- Renamed {/}`stop` to {/}`clear`, it does'nt disconnects from the channel anymore, instead just clears the queue and stops the current playing media.
+
+[15/02/2026]
+- Can now Selectively delete messages, messages reacted with ⭐ won't be deleted by standard 's!purge <count>' while 's!purgeall <count>' deletes everything 

@@ -5,11 +5,11 @@ from PIL import Image
 import aiohttp
 import io
 import re
-
+from os import makedirs, path, remove
 
 # Regex
 url_regex = re.compile(r"https?://[^\s)]+")
-secret_role = "Secret Club"
+secret_role = "WPlace"
 
 
 def count_nontransparent_pixels(img: Image.Image) -> int:
@@ -38,15 +38,18 @@ class Utility(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"{__name__} is online!")
+
 
 
     @commands.command()
     async def cf(self, ctx):
         """Usage:\ns!cf"""
         await ctx.send(choice(["Heads", "Tails"]))
+
 
     @commands.command()
     async def random(self, ctx, lower:int, upper:int):
@@ -57,6 +60,7 @@ class Utility(commands.Cog):
         random_number = randint(lower, upper)
         await ctx.send(f"🎲 Random Number from **{lower}** to **{upper}**: `{random_number}`")
 
+
     @random.error
     async def random_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
@@ -65,6 +69,7 @@ class Utility(commands.Cog):
             await ctx.send("❌ You need to provide Both **Upper** and **Lower** Bounds")
         else:
             await ctx.send("❌ Something Went Wrong...")
+
 
     @commands.command()
     async def pc(self, ctx, *,arg: str = None):
@@ -107,37 +112,108 @@ class Utility(commands.Cog):
         )
 
 
+    @commands.command(aliases=['mw','memo'])
+    async def memwrite(self, ctx, *, args):
+        file_dir_name = str(ctx.guild.id)
+        full_path = path.join("memory", file_dir_name)
+        makedirs(full_path, exist_ok=True)
+        
+        file_path = path.join(full_path, file_dir_name + ".txt")
+        
+        with open(file_path, 'a') as file:
+            file.write(f"{args}\n")
+        
+        await ctx.send(f"Written to Memory: {args}") 
+
+    
+    @commands.command()
+    async def memlist(self, ctx):
+        file_dir_name = str(ctx.guild.id)
+        full_path = path.join("memory", file_dir_name)
+        file_path = path.join(full_path, file_dir_name + ".txt")
+
+        full_message = ""
+        with open(file_path, 'r') as file:
+            for line in file:
+                full_message += line
+
+        await ctx.send(f"```{full_message}```")
+
+    
+    @commands.command()
+    async def memclear(self, ctx):
+        file_dir_name = str(ctx.guild.id)
+        full_path = path.join("memory", file_dir_name)
+        remove(full_path)
+
+
     # ------------------ || UNUSED EXAMPLES || ------------------ #
     @commands.command()
     async def hello(self, ctx):
         await ctx.send(f"Hello {ctx.author.mention}")
     
+   
     @commands.command()
-    async def assign(self, ctx):
+    async def assign(self, ctx, member: discord.Member = None):
+        """
+            Assigns the secret role to a mentioned member.
+            Usage: s!assign @member
+        """
         role = discord.utils.get(ctx.guild.roles, name=secret_role)
-        if role:
-            await ctx.author.add_roles(role)
-            await ctx.send(f"{ctx.author.mention} is now assigned to **{secret_role}**")
-        else:
+        if role is None:
             await ctx.send("Role Does not Exist")
+            return
+        if role > ctx.guild.me.top_role:
+            await ctx.send("Role is higher or equal to my highest role!")
+            return
+        if member is None:
+            await ctx.send("Please mention a member to assign the role to.")
+            return
 
+        await member.add_roles(role)
+        await ctx.send(f"{member.mention} is now assigned to **{secret_role}**")
+
+
+    # @commands.Cog.listener()
+    # async def on_raw_reaction_add(self, payload):
+
+
+   
     @commands.command()
-    async def remove(self, ctx):
+    async def remove(self, ctx, member: discord.Member = None):
+        """
+            Removes the secret role from a mentioned member.
+            Usage: s!remove @member
+        """
+        # FIX THIS
         role = discord.utils.get(ctx.guild.roles, name=secret_role)
-        if role:
-            await ctx.author.remove_roles(role)
-            await ctx.send(f"{ctx.author.mention} has had the **{secret_role}** role removed.")
-        else:
+        if role is None:
             await ctx.send("Role Does not Exist")
+            return
+        if member.top_role >= ctx.guild.me.top_role:
+            await ctx.send(f"Cannot remove {secret_role} from {member.name} because my role is lower or equal in the hierarchy.")
+            return
+        if member is None:
+            await ctx.send("Please mention a member to remove the role from.")
+            return
+        if secret_role not in member.roles:
+            await ctx.send(f"{member.name} does not have {secret_role} role.")
+            return
 
+        await member.remove_roles(role)
+        await ctx.send(f"**{secret_role}** role has been removed from {member.mention}.")
+
+   
     @commands.command()
     async def dm(self, ctx, *, msg):
         await ctx.author.send(f"You said {msg}")
 
+   
     @commands.command()
     async def reply(self, ctx):
         await ctx.reply("This is a reply to your message!")
 
+   
     @commands.command()
     async def poll(self, ctx, *, question):
         embed = discord.Embed(title="New Poll", description=question)
@@ -151,6 +227,7 @@ class Utility(commands.Cog):
     async def secret(self, ctx):
         await ctx.send("Welcome to the Club!")
 
+    
     @secret.error
     async def secret_error(self, ctx, error):
         if isinstance(error, commands.MissingRole):
