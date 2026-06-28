@@ -33,3 +33,6 @@ Below are all the `{/}` commands which are available to use in this version.
 **v0.1.1** 
 - Added {/}`disconnect` which disconnects the bot from the Voice Channel.
 - Renamed {/}`stop` to {/}`clear`, it does'nt disconnects from the channel anymore, instead just clears the queue and stops the current playing media.
+
+[15/02/2026]
+- Can now Selectively delete messages, messages reacted with ⭐ won't be deleted by standard 's!purge <count>' while 's!purgeall <count>' deletes everything 

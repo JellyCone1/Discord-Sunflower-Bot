@@ -15,3 +15,9 @@ fix the remove roles function
 
 install the nightly yt-dlp:
 python3 -m pip install -U --pre "yt-dlp[default]"
+
+cant download from reddit or vimeo using the bot
+
+Extreme Video Compression (AV1,VP9)
+Reduce Bitrate
+Frame skip

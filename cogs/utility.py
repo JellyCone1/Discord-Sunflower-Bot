@@ -5,7 +5,7 @@ from PIL import Image
 import aiohttp
 import io
 import re
-
+from os import makedirs, path, remove
 
 # Regex
 url_regex = re.compile(r"https?://[^\s)]+")
@@ -112,6 +112,41 @@ class Utility(commands.Cog):
         )
 
 
+    @commands.command(aliases=['mw','memo'])
+    async def memwrite(self, ctx, *, args):
+        file_dir_name = str(ctx.guild.id)
+        full_path = path.join("memory", file_dir_name)
+        makedirs(full_path, exist_ok=True)
+        
+        file_path = path.join(full_path, file_dir_name + ".txt")
+        
+        with open(file_path, 'a') as file:
+            file.write(f"{args}\n")
+        
+        await ctx.send(f"Written to Memory: {args}") 
+
+    
+    @commands.command()
+    async def memlist(self, ctx):
+        file_dir_name = str(ctx.guild.id)
+        full_path = path.join("memory", file_dir_name)
+        file_path = path.join(full_path, file_dir_name + ".txt")
+
+        full_message = ""
+        with open(file_path, 'r') as file:
+            for line in file:
+                full_message += line
+
+        await ctx.send(f"```{full_message}```")
+
+    
+    @commands.command()
+    async def memclear(self, ctx):
+        file_dir_name = str(ctx.guild.id)
+        full_path = path.join("memory", file_dir_name)
+        remove(full_path)
+
+
     # ------------------ || UNUSED EXAMPLES || ------------------ #
     @commands.command()
     async def hello(self, ctx):
@@ -187,7 +222,6 @@ class Utility(commands.Cog):
         await poll_message.add_reaction("👎")
 
 
-    
     @commands.command()
     @commands.has_role(secret_role)
     async def secret(self, ctx):

@@ -6,6 +6,7 @@ import yt_dlp
 import asyncio
 from collections import deque
 from os.path import join
+from os import path, remove
 
 
 # General function to run yt-dlp extraction in an executor
@@ -30,6 +31,97 @@ class Ytdlp_handler(commands.Cog):
     async def on_ready(self):
         print(f"{__name__} is online!")
     
+
+    @commands.command(aliases=['dl'])
+    async def download(self, ctx, url: str):
+        file_size_limit = 8*1024*1024
+
+        ytdlp_opts_list = [
+            {'height': 1080, 'label': '1080p'},
+            {'height': 720, 'label': '720p'},
+            {'height': 480, 'label': '480p'},
+            {'height': 360, 'label': '360p'},
+            {'height': 144, 'label': '144p'}
+        ]
+
+        # Standard "High Quality" (Default)
+        for res in ytdlp_opts_list:
+            ydl_opts = {
+            # 'bestvideo+bestaudio' often merges into .mkv or .webm automatically
+            'outtmpl': 'downloads/%(title)s [%(id)s].%(ext)s',
+            'format': f"bestvideo[height<={res['height']}][ext=webm]+bestaudio[ext=webm]/bestvideo[height<={res['height']}][ext=mp4]+bestaudio[ext=m4a]/best[height<={res['height']}]",
+            # 'format': 'bv+ba/b',
+            'format_sort': ['ext:webm:mp4:mkv', 'codec:vp9:opus'],
+            'noplaylist': True,
+            # 'no_warnings': True,
+            # 'user_agent': 'Mozilla/5.0 (compatible; DiscordBot/2.0; +https://discordapp.com)',
+            'cookiefile': 'cookies.txt',
+            # 'socket_timeout': 10,
+            # 'retries': 3,
+            # 'hls_prefer_native': True,
+            # 'external_downloader': None,
+            'verbose': True,
+            }
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                filesize = info.get('filesize') or info.get('filesize_approx')
+                if filesize <= file_size_limit:
+                    chosen_ytdlp_opt = ydl_opts
+                    # final_info = info
+                    break
+                elif (filesize > file_size_limit) and (res['height'] == 144):
+                    await ctx.send(f"Sorry, the file size exceeds 8MB even at the lowest resolution (144p). Approx File Size: {filesize/(1024*1024):.2f} MB.")
+                    return
+                else:
+                    print(f"Skipping {res['label']} (approx {filesize/(1024*1024):.2f}MB)")
+                        
+        if chosen_ytdlp_opt:
+            with yt_dlp.YoutubeDL(chosen_ytdlp_opt) as ydl:
+                file_path = ydl.prepare_filename(info)
+                try:
+                    ydl.download([url])
+                    await ctx.reply(file=discord.File(file_path))
+                    print("File Uploaded Successfully!")
+                
+                except Exception as e:
+                    return await ctx.send(f"Error extracting info: {e}")
+                
+                finally:
+                    if path.exists(file_path):
+                        remove(file_path)
+                        print("Successfully Deleted File from Local Storage")
+
+
+    @commands.command(aliases=['rdl'])
+    async def redditdownload(self, ctx, url):
+        file_sz_lm = 8*(1024*1024)
+
+        ydl_opts = {
+            # 'bestvideo+bestaudio' often merges into .mkv or .webm automatically
+            'outtmpl': 'downloads/%(title)s [%(id)s].%(ext)s',
+            'format': f"bestvideo[height<=720][ext=webm]+bestaudio[ext=webm]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]",
+            # 'format': 'bv+ba/b',
+            'format_sort': ['ext:webm:mp4:mkv', 'codec:vp9:opus'],
+            'noplaylist': True,
+            # 'no_warnings': True,
+            # 'user_agent': 'Mozilla/5.0 (compatible; DiscordBot/2.0; +https://discordapp.com)',
+            'cookiefile': 'cookies.txt',
+            # 'socket_timeout': 10,
+            # 'retries': 3,
+            # 'hls_prefer_native': True,
+            # 'external_downloader': None,
+            'verbose': True,
+        }
+
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+
+        except Exception as e:
+            return await ctx.send(f"Error extracting info: {e}")
+
+
     # Music Streaming (/ commands)
     @app_commands.command(name="play", description="Play a song or add it to the queue.")
     @app_commands.describe(song_query="Search query")
@@ -248,7 +340,9 @@ class Ytdlp_handler(commands.Cog):
                 "options": "-vn -c:a libopus -b:a 96k",
             }
 
-            source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('bin', 'ffmpeg', 'ffmpeg.exe'))
+            # Uses the Default install path for `sudo apt-get install ffmpeg`
+            source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('bin', 'ffmpeg', 'ffmpeg.exe'))  # Windows
+            # source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('/', 'usr', 'bin', 'ffmpeg'))  # Linux
 
             def after_play(error):
                 if error:
