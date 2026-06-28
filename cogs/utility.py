@@ -6,6 +6,7 @@ import aiohttp
 import io
 import re
 from os import makedirs, path, remove
+import requests
 
 # Regex
 url_regex = re.compile(r"https?://[^\s)]+")
@@ -146,6 +147,30 @@ class Utility(commands.Cog):
         full_path = path.join("memory", file_dir_name)
         remove(full_path)
 
+
+    @commands.command()
+    async def uma_s(self, ctx):
+        base_url = "https://umapyoi.net/api/v1"
+        url = f"{base_url}/character/images/1001"
+        response = requests.get(url)
+        print(response)
+        
+        embed = discord.Embed(
+            title="This is a Title",
+            description="This is a description"
+        )
+
+        if response.status_code == 200:
+            uma_data = response.json()
+            # print(uma_data)
+            # uncomment the following line to print the first image URL of the character
+            print(uma_data[0].get('images', [])[0].get('image', 'No image found'))
+            embed.set_image(url=uma_data[0].get('images', [])[0].get('image', 'No image found'))
+        else:
+            print(f"Failed to retrive data {response.status_code}")
+        
+        # embed.set_image(url="https://static.wikia.nocookie.net/omori/images/a/ab/DW_Aubrey_Neutral_%28No_Background%29.gif/revision/latest?cb=20210825052349")
+        await ctx.send(embed=embed)
 
     # ------------------ || UNUSED EXAMPLES || ------------------ #
     @commands.command()

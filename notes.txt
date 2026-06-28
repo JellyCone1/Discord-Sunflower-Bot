@@ -21,3 +21,30 @@ cant download from reddit or vimeo using the bot
 Extreme Video Compression (AV1,VP9)
 Reduce Bitrate
 Frame skip
+
+--------------------------------------------------------------------------
+Security Todo:
+Optimized tool selectionI'll create a short security TODO plan for your bot, then list concrete security changes you can make.
+
+Created 8 todos
+
+**Security Recommendations**
+
+- **Secrets/Repo**: Remove sensitive files like cookies.txt from the repo and add a .gitignore.  
+- **Credentials**: Move the bot token and API keys out of code into environment variables (or a secrets manager). Use `os.environ` / `python-dotenv` for local dev.  
+- **Rotate Tokens**: If any tokens were committed, rotate them immediately and treat them as compromised.  
+- **Least Privilege**: Limit the bot's Discord OAuth scopes and gateway intents to only what you need (configure in main.py and on the Developer Portal).  
+- **Command Authorization**: Require role/owner checks for privileged commands (use `commands.is_owner()` or custom role checks). Deny dangerous commands to unauthorised users.  
+- **Input Validation / Sanitization**: Validate user input (filenames, URLs, IDs) before using it. Never eval/exec user input.  
+- **Safe downloads / ytdlp**: Validate and sanitize URLs passed to `ytdlp_handler.py`; run downloads in a restricted temp dir and scan/limit file size. Avoid shell=True when spawning ffmpeg.  
+- **Rate Limiting & Cooldowns**: Add command cooldowns and throttling to prevent abuse and accidental API overuse. Implement exponential backoff on upstream failures.  
+- **Error Handling**: Catch and log exceptions; avoid crashing the whole bot on unhandled errors. Return minimal error info to users.  
+- **Logging & Audit**: Log command use, permission changes, and admin actions to a secure location (rotate logs, redact secrets). Consider an audit channel with limited access.  
+- **Dependencies**: Pin versions in requirements.txt, run `pip-audit` / Dependabot, and update vulnerable packages promptly.  
+- **Secrets Scanning**: Run a secrets-scan (git-secrets, truffleHog, or `git grep`) across the repo to find leaked tokens.  
+- **Runtime Safety**: Run the bot inside a virtualenv or non-privileged user; consider containerization (Docker) with minimal privileges.  
+- **Network Security**: Use TLS for any external calls and verify certificates. Restrict outbound network access if possible.  
+- **Storage Security**: Encrypt or restrict access to any persisted sensitive data (the memory folder). Avoid storing raw tokens or PII in plain text.  
+- **CI / Repo Protections**: Enable branch protection, require PR reviews, and enable secret scanning on GitHub. Use environment secrets in CI instead of hardcoding.  
+
+Would you like me to (pick one): add a .gitignore and remove cookies.txt from the repo, scan the workspace for exposed secrets, or implement environment-variable token loading in main.py?
