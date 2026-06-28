@@ -340,9 +340,8 @@ class Ytdlp_handler(commands.Cog):
                 "options": "-vn -c:a libopus -b:a 96k",
             }
 
-            # Uses the Default install path for `sudo apt-get install ffmpeg`
-            source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('bin', 'ffmpeg', 'ffmpeg.exe'))  # Windows
-            # source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('/', 'usr', 'bin', 'ffmpeg'))  # Linux
+            source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('bin', 'ffmpeg', 'ffmpeg.exe'))  # Uncomment For Windows Systems
+            # source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('/', 'usr', 'bin', 'ffmpeg'))  # Uncomment For Linux Systems
 
             def after_play(error):
                 if error:
