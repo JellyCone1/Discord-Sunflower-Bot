@@ -7,6 +7,7 @@ import io
 import re
 from os import makedirs, path, remove
 import requests
+import json
 
 # Regex
 url_regex = re.compile(r"https?://[^\s)]+")
@@ -147,17 +148,28 @@ class Utility(commands.Cog):
         full_path = path.join("memory", file_dir_name)
         remove(full_path)
 
+# <-------------------------------------------------------------------------------->
 
+    def random_char_id(self, json_data):
+        with open(json_data, 'r', encoding="utf-8") as file:
+            characters = json.load(file)
+
+        choosen_character = choice(characters)
+        return choosen_character.get('game_id', 'web_id')
+    
     @commands.command()
     async def uma_s(self, ctx):
         base_url = "https://umapyoi.net/api/v1"
-        url = f"{base_url}/character/images/1001"
+        json_path = "data/umamusume_character_endpoint.json"
+        random_character = self.random_char_id(json_path)
+        url = f"{base_url}/character/images/{random_character}"
         response = requests.get(url)
         print(response)
+        print(random_character)
         
         embed = discord.Embed(
-            title="This is a Title",
-            description="This is a description"
+            # title="This is a Title",
+            # description="This is a description"
         )
 
         if response.status_code == 200:
@@ -171,6 +183,7 @@ class Utility(commands.Cog):
         
         # embed.set_image(url="https://static.wikia.nocookie.net/omori/images/a/ab/DW_Aubrey_Neutral_%28No_Background%29.gif/revision/latest?cb=20210825052349")
         await ctx.send(embed=embed)
+
 
     # ------------------ || UNUSED EXAMPLES || ------------------ #
     @commands.command()

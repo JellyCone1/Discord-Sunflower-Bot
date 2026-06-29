@@ -22,6 +22,8 @@ Extreme Video Compression (AV1,VP9)
 Reduce Bitrate
 Frame skip
 
+Use External Databases for Storing Uma_information
+
 --------------------------------------------------------------------------
 Security Todo:
 Optimized tool selectionI'll create a short security TODO plan for your bot, then list concrete security changes you can make.
