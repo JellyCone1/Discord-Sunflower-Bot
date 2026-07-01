@@ -8,6 +8,7 @@ import re
 from os import makedirs, path, remove
 import requests
 import json
+import aiosqlite
 
 # Regex
 url_regex = re.compile(r"https?://[^\s)]+")
@@ -159,29 +160,33 @@ class Utility(commands.Cog):
     
     @commands.command()
     async def uma_s(self, ctx):
-        base_url = "https://umapyoi.net/api/v1"
-        json_path = "data/umamusume_character_endpoint.json"
-        random_character = self.random_char_id(json_path)
-        url = f"{base_url}/character/images/{random_character}"
-        response = requests.get(url)
-        print(response)
-        print(random_character)
-        
+        DB_FILE = "data/character_endpoint.db"
+        query1 = """
+            SELECT web_id FROM character_data ORDER BY RANDOM() LIMIT 1
+        """
+        query2 = """
+            SELECT name_en, name_jp,
+                COALESCE(racewear_img_url, uniform_img_url, concept_art_img_url, stage_uniform_url, default_img_url) AS active_img
+            FROM character_data
+            WHERE web_id = ?
+        """
+
+        async with aiosqlite.connect(DB_FILE) as db:
+            async with db.execute(query1) as cursor:
+                random_pick = await cursor.fetchone()
+                
+            async with db.execute(query2, random_pick) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    name_en, name_jp, outfit_url = row
+
         embed = discord.Embed(
-            # title="This is a Title",
-            # description="This is a description"
+            title=name_en,
+            description=name_jp,
+            color=0xFF00FF
         )
 
-        if response.status_code == 200:
-            uma_data = response.json()
-            # print(uma_data)
-            # uncomment the following line to print the first image URL of the character
-            print(uma_data[0].get('images', [])[0].get('image', 'No image found'))
-            embed.set_image(url=uma_data[0].get('images', [])[0].get('image', 'No image found'))
-        else:
-            print(f"Failed to retrive data {response.status_code}")
-        
-        # embed.set_image(url="https://static.wikia.nocookie.net/omori/images/a/ab/DW_Aubrey_Neutral_%28No_Background%29.gif/revision/latest?cb=20210825052349")
+        embed.set_image(url=outfit_url)
         await ctx.send(embed=embed)
 
 
