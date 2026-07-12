@@ -35,4 +35,10 @@ Below are all the `{/}` commands which are available to use in this version.
 - Renamed {/}`stop` to {/}`clear`, it does'nt disconnects from the channel anymore, instead just clears the queue and stops the current playing media.
 
 [15/02/2026]
-- Can now Selectively delete messages, messages reacted with ⭐ won't be deleted by standard 's!purge <count>' while 's!purgeall <count>' deletes everything 
+- Can now Selectively delete messages, messages reacted with ⭐ won't be deleted by standard 's!purge <count>' while 's!purgeall <count>' deletes everything
+
+[13/07/2026]
+**v0.2.0**
+- `s!whoisthatuma_M` -> Added UmaGuesser, guess the character from umamusume to gain 1 appraisal point from Tazuna
+- `s!uma_r` -> Shows a random umamusume character 
+- 
