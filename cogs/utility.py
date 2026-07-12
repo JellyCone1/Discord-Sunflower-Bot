@@ -9,11 +9,14 @@ from os import makedirs, path, remove
 import requests
 import json
 import aiosqlite
+import asyncio
+import re
+import unicodedata
 
 # Regex
 url_regex = re.compile(r"https?://[^\s)]+")
 secret_role = "WPlace"
-
+command_prefix = "s!"
 
 def count_nontransparent_pixels(img: Image.Image) -> int:
     """Count Non-Transparent Pixels in an RGBA image."""
@@ -46,6 +49,11 @@ class Utility(commands.Cog):
     async def on_ready(self):
         print(f"{__name__} is online!")
 
+
+    def check_message_ownership(self, ctx):
+        def check(m):
+            return m.author == ctx.author and m.channel == ctx.channel
+        return check
 
 
     @commands.command()
@@ -150,16 +158,7 @@ class Utility(commands.Cog):
         remove(full_path)
 
 # <-------------------------------------------------------------------------------->
-
-    def random_char_id(self, json_data):
-        with open(json_data, 'r', encoding="utf-8") as file:
-            characters = json.load(file)
-
-        choosen_character = choice(characters)
-        return choosen_character.get('game_id', 'web_id')
-    
-    @commands.command()
-    async def uma_s(self, ctx):
+    async def fetch_uma_data(self, web_id=None) -> tuple:
         DB_FILE = "data/character_endpoint.db"
         query1 = """
             SELECT web_id FROM character_data ORDER BY RANDOM() LIMIT 1
@@ -171,15 +170,32 @@ class Utility(commands.Cog):
             WHERE web_id = ?
         """
 
-        async with aiosqlite.connect(DB_FILE) as db:
-            async with db.execute(query1) as cursor:
-                random_pick = await cursor.fetchone()
-                
-            async with db.execute(query2, random_pick) as cursor:
-                row = await cursor.fetchone()
-                if row:
-                    name_en, name_jp, outfit_url = row
+        async with aiosqlite.connect(DB_FILE) as db: 
+            if web_id is None:
+                async with db.execute(query1) as cursor:
+                    random_pick = await cursor.fetchone()
 
+                async with db.execute(query2, random_pick) as cursor:
+                    row = await cursor.fetchone()
+                    if row:
+                        name_en, name_jp, outfit_url = row
+            else:
+                async with db.execute(query2, (web_id,)) as cursor:
+                    row = await cursor.fetchone()
+                    if row:
+                        name_en, name_jp, outfit_url = row
+        
+        return name_en, name_jp, outfit_url
+
+    def normalize_text(self, s: str) -> str:
+        s = unicodedata.normalize("NFKD", s)
+        s = s.casefold()
+        s = re.sub(r"\s+", "", s)
+        return s
+
+    @commands.command()
+    async def uma_r(self, ctx, web_id=None):
+        name_en, name_jp, outfit_url = await self.fetch_uma_data() if web_id is None else await self.fetch_uma_data(web_id)
         embed = discord.Embed(
             title=name_en,
             description=name_jp,
@@ -188,6 +204,55 @@ class Utility(commands.Cog):
 
         embed.set_image(url=outfit_url)
         await ctx.send(embed=embed)
+
+    @commands.command()
+    async def whoisthatuma_M(self, ctx, web_id=None):
+        tries = 3
+        game_solved = False
+        name_en, name_jp, outfit_url = await self.fetch_uma_data() if web_id is None else await self.fetch_uma_data(web_id)
+
+        embed = discord.Embed(
+            title="WHO IS THAT CHARACTER?",
+            description="Answer it to get 1 point of appreciation from Tazuna\nYou have 3 Tries to hit!\nType 'giveup' or 'gu' to give up",
+            color=0xFFFF00
+        )
+        embed.set_image(url=outfit_url)
+        await ctx.send(embed=embed)
+
+        while tries > 0:
+            try:
+                answer = await self.bot.wait_for(
+                    'message',
+                    check=self.check_message_ownership(ctx),
+                    timeout=30.0
+                )
+            except asyncio.TimeoutError:
+                await ctx.send(f"**Tazuna**: Times UP!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}")
+                break
+            else:
+                user_guess = self.normalize_text(answer.content)
+                correct_answer = self.normalize_text(name_en)
+
+                if user_guess in ['gu', 'giveup']:
+                    break
+                elif user_guess.startswith(command_prefix):
+                    break
+                elif user_guess == correct_answer:
+                    await ctx.send("Correct! :white_check_mark: Approved by Tazuna")
+                    game_solved = True
+                    break
+                else:
+                    tries -= 1
+                    await ctx.send(f"Remaining Tries: {tries}")
+        
+        if tries <= 0 and game_solved == False:
+            await ctx.send(f"**Tazuna**: Unfortunately, all of your guesses were wrong, You need some personal tutoring!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}")
+        elif user_guess.startswith(command_prefix) and game_solved == False:
+            await ctx.send("Skipped :fast_forward:")
+        elif tries > 0 and game_solved == False:
+            await ctx.send(f"**Tazuna**: Giving up early? Let's try harder next time!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}")
+        else:
+            pass
 
 
     # ------------------ || UNUSED EXAMPLES || ------------------ #
