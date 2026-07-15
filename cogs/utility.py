@@ -12,6 +12,7 @@ import aiosqlite
 import asyncio
 import re
 import unicodedata
+from urllib.parse import quote
 
 # Regex
 url_regex = re.compile(r"https?://[^\s)]+")
@@ -158,17 +159,135 @@ class Utility(commands.Cog):
         remove(full_path)
 
 # <-------------------------------------------------------------------------------->
-    async def fetch_uma_data(self, web_id=None) -> tuple:
+    async def fetch_uma_data(self, difficulty: int, web_id=None) -> tuple:
         DB_FILE = "data/character_endpoint.db"
+        cdn_base_url = "https://pub-0d1e39b3b866499183216ace337215cc.r2.dev"
+        
         query1 = """
             SELECT web_id FROM character_data ORDER BY RANDOM() LIMIT 1
         """
-        query2 = """
-            SELECT name_en, name_jp,
-                COALESCE(racewear_img_url, uniform_img_url, concept_art_img_url, stage_uniform_url, default_img_url) AS active_img
-            FROM character_data
-            WHERE web_id = ?
-        """
+        
+        if difficulty == 1:
+            query2 = """
+                SELECT name_en, name_jp,
+                    COALESCE(racewear_img_url, uniform_img_url, concept_art_img_url, stage_uniform_url, default_img_url) AS active_img
+                FROM character_data
+                WHERE web_id = ?
+            """
+        
+        if difficulty == 2:
+            query2 = """
+                SELECT 
+                    character_data.name_en, 
+                    character_data.name_jp,
+                    COALESCE(
+                        character_reveal_modif.racewear_img_url, 
+                        character_reveal_modif.uniform_img_url, 
+                        character_reveal_modif.concept_art_img_url, 
+                        character_reveal_modif.stage_uniform_url, 
+                        character_reveal_modif.default_img_url
+                    ) AS reveal_img,
+                    COALESCE(
+                        character_silhouette_modif.racewear_img_url, 
+                        character_silhouette_modif.uniform_img_url, 
+                        character_silhouette_modif.concept_art_img_url, 
+                        character_silhouette_modif.stage_uniform_url, 
+                        character_silhouette_modif.default_img_url
+                    ) AS silhouette_img
+                FROM character_data
+
+                JOIN character_reveal_modif
+                ON character_data.web_id = character_reveal_modif.web_id
+
+                JOIN character_silhouette_modif
+                ON character_data.web_id = character_silhouette_modif.web_id 
+                WHERE character_data.web_id = ?
+            """
+        
+        if difficulty == 3:
+            query2 = """
+                SELECT 
+                    character_data.name_en, 
+                    character_data.name_jp,
+                    COALESCE(
+                        character_reveal_modif.racewear_img_url, 
+                        character_reveal_modif.uniform_img_url, 
+                        character_reveal_modif.concept_art_img_url, 
+                        character_reveal_modif.stage_uniform_url, 
+                        character_reveal_modif.default_img_url
+                    ) AS reveal_img,
+                    COALESCE(
+                        character_blur_modif.racewear_img_url, 
+                        character_blur_modif.uniform_img_url, 
+                        character_blur_modif.concept_art_img_url, 
+                        character_blur_modif.stage_uniform_url, 
+                        character_blur_modif.default_img_url
+                    ) AS blur_img
+                FROM character_data
+
+                JOIN character_reveal_modif
+                ON character_data.web_id = character_reveal_modif.web_id
+
+                JOIN character_blur_modif
+                ON character_data.web_id = character_blur_modif.web_id 
+                WHERE character_data.web_id = ?
+            """
+        
+        if difficulty == 42:
+            query2 = """
+                SELECT 
+                    character_data.name_en, 
+                    character_data.name_jp,
+
+                    character_reveal_modif.racewear_img_url, 
+                    character_reveal_modif.uniform_img_url, 
+                    character_reveal_modif.concept_art_img_url, 
+                    character_reveal_modif.stage_uniform_url, 
+                    character_reveal_modif.default_img_url,
+
+                    character_silhouette_modif.racewear_img_url, 
+                    character_silhouette_modif.uniform_img_url, 
+                    character_silhouette_modif.concept_art_img_url, 
+                    character_silhouette_modif.stage_uniform_url, 
+                    character_silhouette_modif.default_img_url
+
+                FROM character_data
+
+                JOIN character_reveal_modif
+                ON character_data.web_id = character_reveal_modif.web_id
+
+                JOIN character_silhouette_modif
+                ON character_data.web_id = character_silhouette_modif.web_id 
+                WHERE character_data.web_id = ?
+            """
+
+        if difficulty == 43:
+            query2 = """
+                SELECT 
+                    character_data.name_en, 
+                    character_data.name_jp,
+
+                    character_reveal_modif.racewear_img_url, 
+                    character_reveal_modif.uniform_img_url, 
+                    character_reveal_modif.concept_art_img_url, 
+                    character_reveal_modif.stage_uniform_url, 
+                    character_reveal_modif.default_img_url,
+
+                    character_blur_modif.racewear_img_url, 
+                    character_blur_modif.uniform_img_url, 
+                    character_blur_modif.concept_art_img_url, 
+                    character_blur_modif.stage_uniform_url, 
+                    character_blur_modif.default_img_url
+
+                FROM character_data
+
+                JOIN character_reveal_modif
+                ON character_data.web_id = character_reveal_modif.web_id
+
+                JOIN character_blur_modif
+                ON character_data.web_id = character_blur_modif.web_id 
+                WHERE character_data.web_id = ?
+            """
 
         async with aiosqlite.connect(DB_FILE) as db: 
             if web_id is None:
@@ -178,14 +297,70 @@ class Utility(commands.Cog):
                 async with db.execute(query2, random_pick) as cursor:
                     row = await cursor.fetchone()
                     if row:
-                        name_en, name_jp, outfit_url = row
+                        if difficulty == 2 or difficulty == 3:
+                            name_en, name_jp, reveal_url, outfit_url = row
+                            outfit_url = f"{cdn_base_url}/{quote(outfit_url)}"
+                            reveal_url = f"{cdn_base_url}/{quote(reveal_url)}"
+                        
+                        elif difficulty == 42:
+                            name_en, name_jp, *urls = row
+                            silhouette_urls = [u for u in urls[5:] if u is not None]
+                            reveal_urls = [u for u in urls[:5] if u is not None]
+                            
+                            selector = randint(0, len(silhouette_urls) - 1)
+                            
+                            outfit_url = f"{cdn_base_url}/{quote(silhouette_urls[selector])}"
+                            reveal_url = f"{cdn_base_url}/{quote(reveal_urls[selector])}"
+
+                        elif difficulty == 43:
+                            name_en, name_jp, *urls = row
+                            blur_urls = [u for u in urls[5:] if u is not None]
+                            reveal_urls = [u for u in urls[:5] if u is not None]
+                            
+                            selector = randint(0, len(blur_urls) - 1)
+                            
+                            outfit_url = f"{cdn_base_url}/{quote(blur_urls[selector])}"
+                            reveal_url = f"{cdn_base_url}/{quote(reveal_urls[selector])}"
+
+                        else:
+                            name_en, name_jp, outfit_url = row
+                            reveal_url = outfit_url
+            
             else:
                 async with db.execute(query2, (web_id,)) as cursor:
                     row = await cursor.fetchone()
                     if row:
-                        name_en, name_jp, outfit_url = row
+                        if difficulty == 2 or difficulty == 3:
+                            name_en, name_jp, reveal_url, outfit_url = row
+                            outfit_url = f"{cdn_base_url}/{quote(outfit_url)}"
+                            reveal_url = f"{cdn_base_url}/{quote(reveal_url)}"
+                        
+                        elif difficulty == 42:
+                            name_en, name_jp, *urls = row
+                            silhouette_urls = [u for u in urls[5:] if u is not None]
+                            reveal_urls = [u for u in urls[:5] if u is not None]
+                            
+                            selector = randint(0, len(silhouette_urls) - 1)
+                            
+                            outfit_url = f"{cdn_base_url}/{quote(silhouette_urls[selector])}"
+                            reveal_url = f"{cdn_base_url}/{quote(reveal_urls[selector])}"
+
+                        elif difficulty == 43:
+                            name_en, name_jp, *urls = row
+                            reveal_urls = [u for u in urls[:5] if u is not None]
+                            blur_urls = [u for u in urls[5:] if u is not None]
+                            
+                            selector = randint(0, len(blur_urls) - 1)
+                            
+                            outfit_url = f"{cdn_base_url}/{quote(blur_urls[selector])}"
+                            reveal_url = f"{cdn_base_url}/{quote(reveal_urls[selector])}"
+                        
+                        else:
+                            name_en, name_jp, outfit_url = row
+                            reveal_url = outfit_url
         
-        return name_en, name_jp, outfit_url
+        return name_en, name_jp, reveal_url, outfit_url
+
 
     def normalize_text(self, s: str) -> str:
         s = unicodedata.normalize("NFKD", s)
@@ -193,9 +368,10 @@ class Utility(commands.Cog):
         s = re.sub(r"\s+", "", s)
         return s
 
+
     @commands.command()
     async def uma_r(self, ctx, web_id=None):
-        name_en, name_jp, outfit_url = await self.fetch_uma_data() if web_id is None else await self.fetch_uma_data(web_id)
+        name_en, name_jp, reveal_url, outfit_url = await self.fetch_uma_data(difficulty=1) if web_id is None else await self.fetch_uma_data( difficulty=1, web_id=web_id)
         embed = discord.Embed(
             title=name_en,
             description=name_jp,
@@ -205,11 +381,18 @@ class Utility(commands.Cog):
         embed.set_image(url=outfit_url)
         await ctx.send(embed=embed)
 
+   
     @commands.command()
-    async def whoisthatuma_M(self, ctx, web_id=None):
+    async def join(self, ctx):
+        await ctx.author.voice.channel.connect()
+
+   
+    @commands.command()
+    async def whoisthatuma(self, ctx, difficulty: int, web_id=None):
         tries = 3
+        reveal = False
         game_solved = False
-        name_en, name_jp, outfit_url = await self.fetch_uma_data() if web_id is None else await self.fetch_uma_data(web_id)
+        name_en, name_jp, reveal_url, outfit_url = await self.fetch_uma_data(difficulty=difficulty) if web_id is None else await self.fetch_uma_data(difficulty=difficulty, web_id=web_id)
 
         embed = discord.Embed(
             title="WHO IS THAT CHARACTER?",
@@ -235,6 +418,9 @@ class Utility(commands.Cog):
 
                 if user_guess in ['gu', 'giveup']:
                     break
+                elif user_guess in ['rvl', 'reveal'] and difficulty in [2, 3, 42, 43]:
+                    reveal = True
+                    break
                 elif user_guess.startswith(command_prefix):
                     break
                 elif user_guess == correct_answer:
@@ -249,8 +435,16 @@ class Utility(commands.Cog):
             await ctx.send(f"**Tazuna**: Unfortunately, all of your guesses were wrong, You need some personal tutoring!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}")
         elif user_guess.startswith(command_prefix) and game_solved == False:
             await ctx.send("Skipped :fast_forward:")
+        elif tries > 0 and game_solved == False and reveal == True:
+            embed = discord.Embed(
+                title=name_en,
+                description=name_jp,
+                color=0x00FF00
+            )
+            embed.set_image(url=reveal_url)
+            await ctx.send(embed=embed)
         elif tries > 0 and game_solved == False:
-            await ctx.send(f"**Tazuna**: Giving up early? Let's try harder next time!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}")
+            await ctx.send(f"**Tazuna**: Giving up early? Let's try harder next time!\nThe Character in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}")
         else:
             pass
 

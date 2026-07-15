@@ -22,7 +22,7 @@ Extreme Video Compression (AV1,VP9)
 Reduce Bitrate
 Frame skip
 
-Use External Databases for Storing Uma_information
+[DONE] Use External Databases for Storing Uma_information
 
 --------------------------------------------------------------------------
 Security Todo:
