@@ -170,7 +170,13 @@ class Utility(commands.Cog):
         if difficulty == 1:
             query2 = """
                 SELECT name_en, name_jp,
-                    COALESCE(racewear_img_url, uniform_img_url, concept_art_img_url, stage_uniform_url, default_img_url) AS active_img
+                    COALESCE(
+                        racewear_img_url, 
+                        uniform_img_url, 
+                        concept_art_img_url, 
+                        stage_uniform_url, 
+                        default_img_url
+                    ) AS active_img
                 FROM character_data
                 WHERE web_id = ?
             """
