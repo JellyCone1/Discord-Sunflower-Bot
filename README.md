@@ -39,5 +39,5 @@ Below are all the `{/}` commands which are available to use in this version.
 
 [13/07/2026]
 **v0.2.0**
-- `s!whoisthatuma_M` -> Added UmaGuesser, guess the character from umamusume to gain 1 appraisal point from Tazuna
+- `s!whoisthatuma {1,2,3,42,43}` -> Added UmaGuesser, guess the character from umamusume to gain 1 appraisal point from Tazuna
 - `s!uma_r` -> Shows a random umamusume character 
