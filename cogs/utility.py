@@ -1,11 +1,12 @@
 import discord 
 from discord.ext import commands
-from random import choice, randint
+from random import choice, randint, shuffle
 from PIL import Image
 import aiohttp
 import io
 import re
 from os import makedirs, path, remove
+from pathlib import Path
 import requests
 import json
 import aiosqlite
@@ -13,11 +14,14 @@ import asyncio
 import re
 import unicodedata
 from urllib.parse import quote
+import subprocess
 
 # Regex
 url_regex = re.compile(r"https?://[^\s)]+")
 secret_role = "WPlace"
 command_prefix = "s!"
+FFMPEG = Path("bin/ffmpeg/ffmpeg.exe")
+
 
 def count_nontransparent_pixels(img: Image.Image) -> int:
     """Count Non-Transparent Pixels in an RGBA image."""
@@ -365,7 +369,7 @@ class Utility(commands.Cog):
                             name_en, name_jp, outfit_url = row
                             reveal_url = outfit_url
         
-        return name_en, name_jp, reveal_url, outfit_url
+        return name_en, name_jp, reveal_url, outfit_url, random_pick
 
 
     def normalize_text(self, s: str) -> str:
@@ -375,9 +379,57 @@ class Utility(commands.Cog):
         return s
 
 
+    async def assist(self, web_id: int):
+        DB_FILE = "data/character_endpoint.db"
+        cdn_base_url = "https://pub-0d1e39b3b866499183216ace337215cc.r2.dev"
+        keys = ['Name', 'Category', 'Birthday', 'Slogan', 'Ears Fact', 'Strengths', 'Weaknesses', 'Voice']
+        hint_table = dict.fromkeys(keys)
+        hints_list = []
+
+        assist_query = f"""
+            SELECT 
+                name_en, 
+                category, 
+                birthday, 
+                slogan_en, 
+                ears_fact, 
+                strengths, 
+                weaknesses,
+                voice_url 
+            FROM character_data WHERE web_id=?
+        """
+
+        async with aiosqlite.connect(DB_FILE) as db:
+            async with db.execute(assist_query, web_id) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    for index in range(len(row)):
+                        hint_table[keys[index]] = row[index]
+
+                    hints_type = [k for k, v in hint_table.items() if v is not None]
+                    hints = [i for i in row if i is not None]
+                    
+                    for i in range(len(hints)):
+                        hints_list.append(
+                            (hints_type[i], hints[i])
+                        )
+                    shuffle(hints_list)
+
+                    if len(hints) > 3:
+                        available_hints = hints_list[:3]  # Max 3 Hints
+                    else:
+                        available_hints = hints_list
+                else:
+                    available_hints = None
+        
+        return available_hints
+
+
+
+    # key AKA web_id
     @commands.command()
     async def uma_r(self, ctx, web_id=None):
-        name_en, name_jp, reveal_url, outfit_url = await self.fetch_uma_data(difficulty=1) if web_id is None else await self.fetch_uma_data( difficulty=1, web_id=web_id)
+        name_en, name_jp, reveal_url, outfit_url, key = await self.fetch_uma_data(difficulty=1) if web_id is None else await self.fetch_uma_data( difficulty=1, web_id=web_id)
         embed = discord.Embed(
             title=name_en,
             description=name_jp,
@@ -396,9 +448,15 @@ class Utility(commands.Cog):
     @commands.command()
     async def whoisthatuma(self, ctx, difficulty: int, web_id=None):
         tries = 3
+        assist = 0
         reveal = False
         game_solved = False
-        name_en, name_jp, reveal_url, outfit_url = await self.fetch_uma_data(difficulty=difficulty) if web_id is None else await self.fetch_uma_data(difficulty=difficulty, web_id=web_id)
+        name_en, name_jp, reveal_url, outfit_url, key = await self.fetch_uma_data(difficulty=difficulty) if web_id is None else await self.fetch_uma_data(difficulty=difficulty, web_id=web_id)
+        hints_list = []
+        assists_used = False
+        hints_fetch_flag = False
+        timeout = False
+        cdn_base_url = "https://pub-0d1e39b3b866499183216ace337215cc.r2.dev"
 
         embed = discord.Embed(
             title="WHO IS THAT CHARACTER?",
@@ -417,6 +475,7 @@ class Utility(commands.Cog):
                 )
             except asyncio.TimeoutError:
                 await ctx.send(f"**Tazuna**: Times UP!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}")
+                timeout = True
                 break
             else:
                 user_guess = self.normalize_text(answer.content)
@@ -424,13 +483,100 @@ class Utility(commands.Cog):
 
                 if user_guess in ['gu', 'giveup']:
                     break
+
                 elif user_guess in ['rvl', 'reveal'] and difficulty in [2, 3, 42, 43]:
                     reveal = True
                     break
+
+                elif user_guess in ['h', 'hint','ht']:
+                    if difficulty > 1:
+                        if assists_used:
+                            await ctx.send("You have used all of your available hints")
+                            continue
+
+                        if not hints_fetch_flag:
+                            hints_list = await self.assist(key)
+                            hints_fetch_flag = True  # Fetch all hints only once
+
+                        if hints_list is None:
+                            await ctx.send("Unfortunately, there are no available hints for this character :(")
+                            continue
+
+                        if assist < len(hints_list) or not assists_used:
+                            if len(hints_list) < 3:
+                                await ctx.send(f"Less than 3 hints available for this character, Available hints: {len(hints_list)}")
+                            
+                            hint_type = hints_list[assist][0]
+                            hint = hints_list[assist][1] if hint_type != 'Name' else (hints_list[assist][1])[0]
+
+                            if hint_type == 'Voice':
+                                voice_url = f"{cdn_base_url}/{hint}"
+                                output_file = Path("downloads/voice.ogg")
+                                
+                                command = [
+                                    str(FFMPEG),
+
+                                    "-hide_banner",
+                                    "-loglevel", "error",
+                                    "-y",
+
+                                    "-i", str(voice_url),
+
+                                    "-vn",
+                                    "-c:a", "libopus",
+                                    "-b:a", "48K",
+                                    "-vbr", "on",
+                                    "-compression_level", "10",
+                                    
+                                    "-application", "voip",
+                                    "-frame_duration", "60",
+
+                                    str(output_file)
+                                ]
+
+                                try:
+                                    subprocess.run(command, check=True)
+
+                                except subprocess.CalledProcessError:
+                                    print(f"[FAILED] {str(voice_url)}")
+
+                                hint = "Listen"
+                                audio = discord.File(output_file)
+
+                                embed = discord.Embed(
+                                    title=f"Hint Type: {hint_type}",
+                                    description=hint,
+                                    color=0x0000FF
+                                )
+                                await ctx.send(embed=embed, file=audio)
+                                assist += 1
+
+                                remove(output_file)
+                            
+                            else:
+                                embed = discord.Embed(
+                                    title=f"Hint Type: {hint_type}",
+                                    description=hint,
+                                    color=0x0000FF
+                                )
+                                await ctx.send(embed=embed)
+                                assist += 1
+                            
+                            if assist >= 3:
+                                assists_used = True
+                            continue
+                            
+                        else:
+                            await ctx.send("You have used all of your available hints")
+                            continue
+                    else:
+                        await ctx.send("Hints are only available at difficulty 2 and above")
+                        continue
+
                 elif user_guess.startswith(command_prefix):
                     break
                 elif user_guess == correct_answer:
-                    await ctx.send("Correct! :white_check_mark: Approved by Tazuna")
+                    await ctx.send(f"Correct! :white_check_mark: Approved by Tazuna\nTotal hints used: {assist}")
                     game_solved = True
                     break
                 else:
@@ -438,7 +584,7 @@ class Utility(commands.Cog):
                     await ctx.send(f"Remaining Tries: {tries}")
         
         if tries <= 0 and game_solved == False:
-            await ctx.send(f"**Tazuna**: Unfortunately, all of your guesses were wrong, You need some personal tutoring!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}")
+            await ctx.send(f"**Tazuna**: Unfortunately, all of your guesses were wrong, You need some personal tutoring!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}\nTotal hints used: {assist}")
         elif user_guess.startswith(command_prefix) and game_solved == False:
             await ctx.send("Skipped :fast_forward:")
         elif tries > 0 and game_solved == False and reveal == True:
@@ -449,8 +595,8 @@ class Utility(commands.Cog):
             )
             embed.set_image(url=reveal_url)
             await ctx.send(embed=embed)
-        elif tries > 0 and game_solved == False:
-            await ctx.send(f"**Tazuna**: Giving up early? Let's try harder next time!\nThe Character in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}")
+        elif tries > 0 and game_solved == False and timeout == False:
+            await ctx.send(f"**Tazuna**: Giving up early? Let's try harder next time!\nThe Character in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}\nTotal hints used: {assist}")
         else:
             pass
 
