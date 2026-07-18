@@ -514,6 +514,8 @@ class Utility(commands.Cog):
                             hint = hints_list[assist][1] if hint_type != 'Name' else (hints_list[assist][1])[0]
 
                             if hint_type == 'Voice':
+                                upload_msg = await ctx.send("Uploading Voice...")
+
                                 voice_url = f"{cdn_base_url}/{hint}"
                                 output_file = Path("downloads/voice.ogg")
                                 
@@ -554,9 +556,10 @@ class Utility(commands.Cog):
                                 )
                                 await ctx.send(embed=embed, file=audio)
                                 assist += 1
+                                await upload_msg.delete()
 
                                 remove(output_file)
-                            
+
                             else:
                                 embed = discord.Embed(
                                     title=f"Hint Type: {hint_type}",
