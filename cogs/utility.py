@@ -15,13 +15,17 @@ import re
 import unicodedata
 from urllib.parse import quote
 import subprocess
+import platform
 
 # Regex
 url_regex = re.compile(r"https?://[^\s)]+")
 secret_role = "WPlace"
 command_prefix = "s!"
-FFMPEG = Path("bin/ffmpeg/ffmpeg.exe")
-
+if platform.system() == 'Windows':
+    FFMPEG = Path("bin/ffmpeg/ffmpeg.exe")
+else:
+    # for linux
+    FFMPEG = Path("/usr/bin/ffmpeg")
 
 def count_nontransparent_pixels(img: Image.Image) -> int:
     """Count Non-Transparent Pixels in an RGBA image."""
