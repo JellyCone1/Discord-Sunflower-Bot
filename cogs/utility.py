@@ -60,7 +60,7 @@ class Utility(commands.Cog):
             description="Latency in ms",
             color=discord.Color.blue()
         )
-        ping_embed.add_field(name=f"{bot.user.name}'s Latency (ms): ", value=f"{round(self.bot.latency * 1000)}ms.", inline=False)
+        ping_embed.add_field(name=f"{self.bot.user.name}'s Latency (ms): ", value=f"{round(self.bot.latency * 1000)}ms.", inline=False)
         ping_embed.set_footer(text=f"Requested by {ctx.author.name}.", icon_url=ctx.author.avatar)
         latency = round(self.bot.latency * 1000)  # Convert to milliseconds
         await ctx.send(embed=ping_embed)
