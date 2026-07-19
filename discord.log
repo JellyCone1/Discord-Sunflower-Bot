@@ -1,2 +1,64 @@
-2026-07-19 02:23:47,859:INFO:discord.client: logging in using static token
-2026-07-19 02:23:51,097:INFO:discord.gateway: Shard ID None has connected to Gateway (Session ID: 9cfaa1b20769ad199945f88beac92ff8).
+2026-07-19 20:07:41,588:INFO:discord.client: logging in using static token
+2026-07-19 20:07:44,422:INFO:discord.gateway: Shard ID None has connected to Gateway (Session ID: ee0cb55be4e73e0692ad0a56a2c0149b).
+2026-07-19 20:09:35,190:INFO:discord.voice_state: Connecting to voice...
+2026-07-19 20:09:35,190:INFO:discord.voice_state: Starting voice handshake... (connection attempt 1)
+2026-07-19 20:09:35,863:INFO:discord.voice_state: Voice handshake complete. Endpoint found: c-bom03-eab4e400.discord.media:2053
+2026-07-19 20:09:36,158:ERROR:discord.voice_state: Failed to connect to voice... Retrying in 1.0s...
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\discord\voice_state.py", line 413, in _inner_connect
+    await self._handshake_websocket()
+  File "C:\Python311\Lib\site-packages\discord\voice_state.py", line 586, in _handshake_websocket
+    await self.ws.poll_event()
+  File "C:\Python311\Lib\site-packages\discord\gateway.py", line 1053, in poll_event
+    raise ConnectionClosed(self.ws, shard_id=None, code=self._close_code)
+discord.errors.ConnectionClosed: Shard ID None WebSocket closed with 4017
+2026-07-19 20:09:36,181:INFO:discord.voice_state: The voice handshake is being terminated for Channel ID 745685698757263430 (Guild ID 729680504965562468)
+2026-07-19 20:09:37,183:INFO:discord.voice_state: Starting voice handshake... (connection attempt 2)
+2026-07-19 20:09:37,822:INFO:discord.voice_state: Voice handshake complete. Endpoint found: c-bom03-eab4e400.discord.media:2053
+2026-07-19 20:09:38,166:ERROR:discord.voice_state: Failed to connect to voice... Retrying in 3.0s...
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\discord\voice_state.py", line 413, in _inner_connect
+    await self._handshake_websocket()
+  File "C:\Python311\Lib\site-packages\discord\voice_state.py", line 586, in _handshake_websocket
+    await self.ws.poll_event()
+  File "C:\Python311\Lib\site-packages\discord\gateway.py", line 1053, in poll_event
+    raise ConnectionClosed(self.ws, shard_id=None, code=self._close_code)
+discord.errors.ConnectionClosed: Shard ID None WebSocket closed with 4017
+2026-07-19 20:09:38,168:INFO:discord.voice_state: The voice handshake is being terminated for Channel ID 745685698757263430 (Guild ID 729680504965562468)
+2026-07-19 20:09:41,171:INFO:discord.voice_state: Starting voice handshake... (connection attempt 3)
+2026-07-19 20:09:41,823:INFO:discord.voice_state: Voice handshake complete. Endpoint found: c-bom03-eab4e400.discord.media:2053
+2026-07-19 20:09:42,109:ERROR:discord.voice_state: Failed to connect to voice... Retrying in 5.0s...
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\discord\voice_state.py", line 413, in _inner_connect
+    await self._handshake_websocket()
+  File "C:\Python311\Lib\site-packages\discord\voice_state.py", line 586, in _handshake_websocket
+    await self.ws.poll_event()
+  File "C:\Python311\Lib\site-packages\discord\gateway.py", line 1053, in poll_event
+    raise ConnectionClosed(self.ws, shard_id=None, code=self._close_code)
+discord.errors.ConnectionClosed: Shard ID None WebSocket closed with 4017
+2026-07-19 20:09:42,109:INFO:discord.voice_state: The voice handshake is being terminated for Channel ID 745685698757263430 (Guild ID 729680504965562468)
+2026-07-19 20:09:47,122:INFO:discord.voice_state: Starting voice handshake... (connection attempt 4)
+2026-07-19 20:09:47,751:INFO:discord.voice_state: Voice handshake complete. Endpoint found: c-bom03-eab4e400.discord.media:2053
+2026-07-19 20:09:48,108:ERROR:discord.voice_state: Failed to connect to voice... Retrying in 7.0s...
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\discord\voice_state.py", line 413, in _inner_connect
+    await self._handshake_websocket()
+  File "C:\Python311\Lib\site-packages\discord\voice_state.py", line 586, in _handshake_websocket
+    await self.ws.poll_event()
+  File "C:\Python311\Lib\site-packages\discord\gateway.py", line 1053, in poll_event
+    raise ConnectionClosed(self.ws, shard_id=None, code=self._close_code)
+discord.errors.ConnectionClosed: Shard ID None WebSocket closed with 4017
+2026-07-19 20:09:48,109:INFO:discord.voice_state: The voice handshake is being terminated for Channel ID 745685698757263430 (Guild ID 729680504965562468)
+2026-07-19 20:09:55,114:INFO:discord.voice_state: Starting voice handshake... (connection attempt 5)
+2026-07-19 20:09:55,881:INFO:discord.voice_state: Voice handshake complete. Endpoint found: c-bom08-aecd0a18.discord.media:8443
+2026-07-19 20:09:56,219:ERROR:discord.voice_state: Failed to connect to voice... Retrying in 9.0s...
+Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\discord\voice_state.py", line 413, in _inner_connect
+    await self._handshake_websocket()
+  File "C:\Python311\Lib\site-packages\discord\voice_state.py", line 586, in _handshake_websocket
+    await self.ws.poll_event()
+  File "C:\Python311\Lib\site-packages\discord\gateway.py", line 1053, in poll_event
+    raise ConnectionClosed(self.ws, shard_id=None, code=self._close_code)
+discord.errors.ConnectionClosed: Shard ID None WebSocket closed with 4017
+2026-07-19 20:09:56,220:INFO:discord.voice_state: The voice handshake is being terminated for Channel ID 745685698757263430 (Guild ID 729680504965562468)
+2026-07-19 20:10:02,113:INFO:discord.voice_state: The voice handshake is being terminated for Channel ID 745685698757263430 (Guild ID 729680504965562468)
