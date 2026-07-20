@@ -40,6 +40,7 @@ class Utility(commands.Cog):
         self.general_url_regex = re.compile(r"https?://[^\s)]+")
         self.command_prefix = "s!"
         self.instagram_url_regex = re.compile(r"^(https?://)?(www\.)?instagram\.com/reel/.+")
+        self.instagram_url_regex_type2 = re.compile(r"^(https?://)?(www\.)?instagram\.com/[a-zA-Z0-9_]+/reel/.+")
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -72,7 +73,9 @@ class Utility(commands.Cog):
             return
         
         user_sent_url = re.search(self.instagram_url_regex, message.content)
-        
+        if not user_sent_url:
+            user_sent_url = re.search(self.instagram_url_regex_type2, message.content)
+
         if user_sent_url:
             embeddable_url = re.sub(
                 r"\.instagram", 
@@ -80,6 +83,7 @@ class Utility(commands.Cog):
                 user_sent_url.group()
             )
             await message.channel.send(f"{message.author.mention} Here is the embeddable link:\n{embeddable_url}")
+            await message.delete()
 
 
     @commands.command()
