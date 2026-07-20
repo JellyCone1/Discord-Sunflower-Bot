@@ -6,7 +6,6 @@ from PIL import Image
 import aiohttp
 import io
 import re
-import re
 
 
 def count_nontransparent_pixels(img: Image.Image) -> int:
@@ -38,8 +37,9 @@ class Utility(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         
-        self.url_regex = re.compile(r"https?://[^\s)]+")
+        self.general_url_regex = re.compile(r"https?://[^\s)]+")
         self.command_prefix = "s!"
+        self.instagram_url_regex = re.compile(r"^(https?://)?(www\.)?instagram\.com/reel/.+")
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -64,6 +64,22 @@ class Utility(commands.Cog):
         ping_embed.set_footer(text=f"Requested by {ctx.author.name}.", icon_url=ctx.author.avatar)
         latency = round(self.bot.latency * 1000)  # Convert to milliseconds
         await ctx.send(embed=ping_embed)
+
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.bot:
+            return
+        
+        user_sent_url = re.search(self.instagram_url_regex, message.content)
+        
+        if user_sent_url:
+            embeddable_url = re.sub(
+                r"\.instagram", 
+                r".kkinstagram", 
+                user_sent_url.group()
+            )
+            await message.channel.send(f"{message.author.mention} Here is the embeddable link:\n{embeddable_url}")
 
 
     @commands.command()
@@ -109,7 +125,7 @@ class Utility(commands.Cog):
 
         # Case 2: Match Markdown-wrapped Link
         elif arg:
-            urls = self.url_regex.findall(arg)
+            urls = self.general_url_regex.findall(arg)
             if urls:
                 url = urls[0]
                 filename = url.split("/")[-1]
