@@ -39,8 +39,15 @@ class Utility(commands.Cog):
         
         self.general_url_regex = re.compile(r"https?://[^\s)]+")
         self.command_prefix = "s!"
-        self.instagram_url_regex = re.compile(r"^(https?://)?(www\.)?instagram\.com/reel/.+")
-        self.instagram_url_regex_type2 = re.compile(r"^(https?://)?(www\.)?instagram\.com/[a-zA-Z0-9_]+/reel/.+")
+
+        # REGEX Patterns for Various Social media Platforms
+        self.social_media_url_regex_list = [
+            r"^(https?://)?(www\.)?instagram\.com/reel/.+",
+            r"^(https?://)?(www\.)?instagram\.com/[a-zA-Z0-9_]+/reel/.+",
+            r"^(https?://)?(www\.)?reddit\.com/r/.+",
+            r"^(https?://)?(www\.)?x\.com/[a-zA-Z0-9_]+/status/.+",
+            r"^(https?://)?(www\.)?tiktok\.com/@[a-zA-Z0-9_]+/video/.+"
+        ]
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -57,7 +64,7 @@ class Utility(commands.Cog):
     async def ping(self, ctx):
         """Check the bot's latency."""
         ping_embed = discord.Embed(
-            title="Pong!",
+            title=":ping_pong: Pong!",
             description="Latency in ms",
             color=discord.Color.blue()
         )
@@ -69,21 +76,47 @@ class Utility(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        embeddable_url = None
+
         if message.author.bot:
             return
         
-        user_sent_url = re.search(self.instagram_url_regex, message.content)
-        if not user_sent_url:
-            user_sent_url = re.search(self.instagram_url_regex_type2, message.content)
+        for i in range(len(self.social_media_url_regex_list)):
+            user_sent_url = re.search(self.social_media_url_regex_list[i], message.content)
 
-        if user_sent_url:
-            embeddable_url = re.sub(
-                r"\.instagram", 
-                r".kkinstagram", 
-                user_sent_url.group()
-            )
+            if user_sent_url and (i == 0 or i == 1):
+                embeddable_url = re.sub(
+                    r"^(https?://)?(www\.)?instagram\.com/", 
+                    r"https://www.kkinstagram.com/", 
+                    user_sent_url.group()
+                )
+
+            if user_sent_url and i == 2:
+                embeddable_url = re.sub(
+                    r"^(https?://)?(www\.)?reddit\.com/", 
+                    r"https://www.vxreddit.com/", 
+                    user_sent_url.group()
+                )
+
+            if user_sent_url and i == 3:
+                embeddable_url = re.sub(
+                    r"^(https?://)?(www\.)?x\.com/", 
+                    r"https://www.fxtwitter.com/",
+                    user_sent_url.group()
+                )
+            
+            if user_sent_url and i == 4:
+                embeddable_url = re.sub(
+                    r"^(https?://)?(www\.)?tiktok\.com/", 
+                    r"https://www.vxtiktok.com/",
+                    user_sent_url.group()
+                )
+
+        if embeddable_url:
+            await message.edit(suppress=True)
             await message.channel.send(f"{message.author.mention} Here is the embeddable link:\n{embeddable_url}")
-            await message.delete()
+        
+        await self.bot.process_commands(message)
 
 
     @commands.command()
