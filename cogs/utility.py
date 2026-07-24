@@ -43,24 +43,29 @@ class Utility(commands.Cog):
         # REGEX Patterns for Various Social media Platforms
         self.social_media_url_regex_list = [
             (
-                re.compile(r"(https?://)?(www\.)?instagram\.com/reel/.+"), 
-                "https://www.kkinstagram.com/"
+                r"(https?://)?(www\.)?instagram\.com/reel/.+",
+                r"(https?://)?(www\.)?instagram\.com/reel/", 
+                r"https://www.kkinstagram.com/reel/"
             ),
             (
-                re.compile(r"(https?://)?(www\.)?instagram\.com/[a-zA-Z0-9_]+/reel/.+"),
-                "https://www.kkinstagram.com/"
+                r"(https?://)?(www\.)?instagram\.com/.+",
+                r"(https?://)?(www\.)?instagram\.com/",
+                r"https://www.kkinstagram.com/"
             ),
             (
-                re.compile(r"(https?://)?(www\.)?reddit\.com/r/.+"),
-                "https://www.vxreddit.com/"
+                r"(https?://)?(www\.)?reddit\.com/.+",
+                r"(https?://)?(www\.)?reddit\.com/",
+                r"https://www.vxreddit.com/"
             ),
             (
-                re.compile(r"(https?://)?(www\.)?x\.com/[a-zA-Z0-9_]+/status/.+"),
-                "https://www.fxtwitter.com/"
+                r"(https?://)?(www\.)?x\.com/.+",
+                r"(https?://)?(www\.)?x\.com/",
+                r"https://www.fxtwitter.com/"
             ),
             (
-                re.compile(r"(https?://)?(www\.)?tiktok\.com/@[a-zA-Z0-9_]+/video/.+"),
-                "https://www.vxtiktok.com/"
+                r"(https?://)?(www\.)?tiktok\.com/.+",
+                r"(https?://)?(www\.)?tiktok\.com/",
+                r"https://www.vxtiktok.com/"
             )
         ]
 
@@ -96,18 +101,18 @@ class Utility(commands.Cog):
         if message.author.bot:
             return
         
-        for regex, replacement in self.social_media_url_regex_list:
-            match = regex.search(message.content)
+        for full_url, regex, replacement in self.social_media_url_regex_list:
+            match = re.search(full_url, message.content)
 
             if match:
-                embeddable_url = regex.sub(
-                    repl=replacement,
-                    string=match.group(),
-                    count=1
+                embeddable_url = re.sub(
+                    regex,
+                    replacement,
+                    match.group()
                 )
 
-                print(regex.pattern)
-                print(regex.search(message.content))
+                print(re.compile(regex).pattern)
+                print(re.compile(regex).search(message.content))
                 break
 
         if embeddable_url:
