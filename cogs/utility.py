@@ -42,11 +42,31 @@ class Utility(commands.Cog):
 
         # REGEX Patterns for Various Social media Platforms
         self.social_media_url_regex_list = [
-            r"^(https?://)?(www\.)?instagram\.com/reel/.+",
-            r"^(https?://)?(www\.)?instagram\.com/[a-zA-Z0-9_]+/reel/.+",
-            r"^(https?://)?(www\.)?reddit\.com/r/.+",
-            r"^(https?://)?(www\.)?x\.com/[a-zA-Z0-9_]+/status/.+",
-            r"^(https?://)?(www\.)?tiktok\.com/@[a-zA-Z0-9_]+/video/.+"
+            (
+                r"(https?://)?(www\.)?instagram\.com/reel/.+",
+                r"(https?://)?(www\.)?instagram\.com/reel/", 
+                r"https://www.kkinstagram.com/reel/"
+            ),
+            (
+                r"(https?://)?(www\.)?instagram\.com/.+",
+                r"(https?://)?(www\.)?instagram\.com/",
+                r"https://www.kkinstagram.com/"
+            ),
+            (
+                r"(https?://)?(www\.)?reddit\.com/.+",
+                r"(https?://)?(www\.)?reddit\.com/",
+                r"https://www.vxreddit.com/"
+            ),
+            (
+                r"(https?://)?(www\.)?x\.com/.+",
+                r"(https?://)?(www\.)?x\.com/",
+                r"https://www.fxtwitter.com/"
+            ),
+            (
+                r"(https?://)?(www\.)?tiktok\.com/.+",
+                r"(https?://)?(www\.)?tiktok\.com/",
+                r"https://www.vxtiktok.com/"
+            )
         ]
 
     @commands.Cog.listener()
@@ -81,42 +101,25 @@ class Utility(commands.Cog):
         if message.author.bot:
             return
         
-        for i in range(len(self.social_media_url_regex_list)):
-            user_sent_url = re.search(self.social_media_url_regex_list[i], message.content)
+        for full_url, regex, replacement in self.social_media_url_regex_list:
+            match = re.search(full_url, message.content)
 
-            if user_sent_url and (i == 0 or i == 1):
+            if match:
                 embeddable_url = re.sub(
-                    r"^(https?://)?(www\.)?instagram\.com/", 
-                    r"https://www.kkinstagram.com/", 
-                    user_sent_url.group()
-                )
-
-            if user_sent_url and i == 2:
-                embeddable_url = re.sub(
-                    r"^(https?://)?(www\.)?reddit\.com/", 
-                    r"https://www.vxreddit.com/", 
-                    user_sent_url.group()
+                    regex,
+                    replacement,
+                    match.group()
                 )
 
-            if user_sent_url and i == 3:
-                embeddable_url = re.sub(
-                    r"^(https?://)?(www\.)?x\.com/", 
-                    r"https://www.fxtwitter.com/",
-                    user_sent_url.group()
-                )
-            
-            if user_sent_url and i == 4:
-                embeddable_url = re.sub(
-                    r"^(https?://)?(www\.)?tiktok\.com/", 
-                    r"https://www.vxtiktok.com/",
-                    user_sent_url.group()
-                )
+                print(re.compile(regex).pattern)
+                print(re.compile(regex).search(message.content))
+                break
 
         if embeddable_url:
             await message.edit(suppress=True)
-            await message.channel.send(f"{message.author.mention} Here is the embeddable link:\n{embeddable_url}")
-        
-        await self.bot.process_commands(message)
+            await message.reply(f"Here is the embeddable link:\n{embeddable_url}", mention_author=False)
+            
+            await self.bot.process_commands(message)
 
 
     @commands.command()
