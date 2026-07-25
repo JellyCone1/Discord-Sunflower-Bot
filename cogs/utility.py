@@ -43,28 +43,28 @@ class Utility(commands.Cog):
         # REGEX Patterns for Various Social media Platforms
         self.social_media_url_regex_list = [
             (
-                r"(https?://)?(www\.)?instagram\.com/reel/.+",
-                r"(https?://)?(www\.)?instagram\.com/reel/", 
+                r"https?://(www\.)?instagram\.com/reel/.+",
+                r"https?://(www\.)?instagram\.com/reel/", 
                 r"https://www.kkinstagram.com/reel/"
             ),
             (
-                r"(https?://)?(www\.)?instagram\.com/.+",
-                r"(https?://)?(www\.)?instagram\.com/",
+                r"https?://(www\.)?instagram\.com/.+",
+                r"https?://(www\.)?instagram\.com/",
                 r"https://www.kkinstagram.com/"
             ),
             (
-                r"(https?://)?(www\.)?reddit\.com/.+",
-                r"(https?://)?(www\.)?reddit\.com/",
+                r"https?://(www\.)?reddit\.com/.+",
+                r"https?://(www\.)?reddit\.com/",
                 r"https://www.vxreddit.com/"
             ),
             (
-                r"(https?://)?(www\.)?x\.com/.+",
-                r"(https?://)?(www\.)?x\.com/",
+                r"https?://(www\.)?x\.com/.+",
+                r"https?://(www\.)?x\.com/",
                 r"https://www.fxtwitter.com/"
             ),
             (
-                r"(https?://)?(www\.)?tiktok\.com/.+",
-                r"(https?://)?(www\.)?tiktok\.com/",
+                r"https?://(www\.)?tiktok\.com/.+",
+                r"https?://(www\.)?tiktok\.com/",
                 r"https://www.vxtiktok.com/"
             )
         ]
