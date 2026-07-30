@@ -50,3 +50,10 @@ Created 8 todos
 - **CI / Repo Protections**: Enable branch protection, require PR reviews, and enable secret scanning on GitHub. Use environment secrets in CI instead of hardcoding.  
 
 Would you like me to (pick one): add a .gitignore and remove cookies.txt from the repo, scan the workspace for exposed secrets, or implement environment-variable token loading in main.py?
+
+
+--------------------------------------------------------------------------
+LINUX Git Commands for safe commits
+
+Locally disable fileMode changes
+> git config --local --get core.fileMode
