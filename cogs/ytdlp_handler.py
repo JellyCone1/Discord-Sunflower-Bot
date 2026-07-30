@@ -7,6 +7,7 @@ import asyncio
 from collections import deque
 from os.path import join
 from os import path, remove
+import platform
 
 
 # General function to run yt-dlp extraction in an executor
@@ -341,8 +342,10 @@ class Ytdlp_handler(commands.Cog):
                 "options": "-vn -c:a libopus -b:a 96k",
             }
 
-            source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('bin', 'ffmpeg', 'ffmpeg.exe'))  # Uncomment For Windows Systems
-            # source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('/', 'usr', 'bin', 'ffmpeg'))  # Uncomment For Linux Systems
+            if platform.system() == 'Windows':
+                source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('bin', 'ffmpeg', 'ffmpeg.exe'))  # Uncomment For Windows Systems
+            else:
+                source = discord.FFmpegOpusAudio(audio_url, **ffmpeg_options, executable=join('/', 'usr', 'bin', 'ffmpeg'))  # Uncomment For Linux Systems
 
             def after_play(error):
                 if error:
