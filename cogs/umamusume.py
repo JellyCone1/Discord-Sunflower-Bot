@@ -16,7 +16,7 @@ class Umamusume(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.command_prefix = "s!"
-        self.cdn_base_url = os.getenv("CLOUDFLARE_R2_CDN_BASE_URL")
+        self.CLOUDFLARE_R2_CDN_BASE_URL = "https://pub-0d1e39b3b866499183216ace337215cc.r2.dev"
 
         if platform.system() == 'Windows':
             self.FFMPEG = Path("bin/ffmpeg/ffmpeg.exe")
@@ -188,8 +188,8 @@ class Umamusume(commands.Cog):
                     if row:
                         if difficulty == 2 or difficulty == 3:
                             name_en, name_jp, reveal_url, outfit_url = row
-                            outfit_url = f"{self.cdn_base_url}/{quote(outfit_url)}"
-                            reveal_url = f"{self.cdn_base_url}/{quote(reveal_url)}"
+                            outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(outfit_url)}"
+                            reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_url)}"
                         
                         elif difficulty == 42:
                             name_en, name_jp, *urls = row
@@ -198,8 +198,8 @@ class Umamusume(commands.Cog):
                             
                             selector = random.randint(0, len(silhouette_urls) - 1)
                             
-                            outfit_url = f"{self.cdn_base_url}/{quote(silhouette_urls[selector])}"
-                            reveal_url = f"{self.cdn_base_url}/{quote(reveal_urls[selector])}"
+                            outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(silhouette_urls[selector])}"
+                            reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_urls[selector])}"
 
                         elif difficulty == 43:
                             name_en, name_jp, *urls = row
@@ -208,8 +208,8 @@ class Umamusume(commands.Cog):
                             
                             selector = random.randint(0, len(blur_urls) - 1)
                             
-                            outfit_url = f"{self.cdn_base_url}/{quote(blur_urls[selector])}"
-                            reveal_url = f"{self.cdn_base_url}/{quote(reveal_urls[selector])}"
+                            outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(blur_urls[selector])}"
+                            reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_urls[selector])}"
 
                         else:
                             name_en, name_jp, outfit_url = row
@@ -221,8 +221,8 @@ class Umamusume(commands.Cog):
                     if row:
                         if difficulty == 2 or difficulty == 3:
                             name_en, name_jp, reveal_url, outfit_url = row
-                            outfit_url = f"{self.cdn_base_url}/{quote(outfit_url)}"
-                            reveal_url = f"{self.cdn_base_url}/{quote(reveal_url)}"
+                            outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(outfit_url)}"
+                            reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_url)}"
                         
                         elif difficulty == 42:
                             name_en, name_jp, *urls = row
@@ -231,8 +231,8 @@ class Umamusume(commands.Cog):
                             
                             selector = random.randint(0, len(silhouette_urls) - 1)
                             
-                            outfit_url = f"{self.cdn_base_url}/{quote(silhouette_urls[selector])}"
-                            reveal_url = f"{self.cdn_base_url}/{quote(reveal_urls[selector])}"
+                            outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(silhouette_urls[selector])}"
+                            reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_urls[selector])}"
 
                         elif difficulty == 43:
                             name_en, name_jp, *urls = row
@@ -241,8 +241,8 @@ class Umamusume(commands.Cog):
                             
                             selector = random.randint(0, len(blur_urls) - 1)
                             
-                            outfit_url = f"{self.cdn_base_url}/{quote(blur_urls[selector])}"
-                            reveal_url = f"{self.cdn_base_url}/{quote(reveal_urls[selector])}"
+                            outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(blur_urls[selector])}"
+                            reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_urls[selector])}"
                         
                         else:
                             name_en, name_jp, outfit_url = row
@@ -329,7 +329,6 @@ class Umamusume(commands.Cog):
         assists_used = False
         hints_fetch_flag = False
         timeout = False
-        cdn_base_url = "https://pub-0d1e39b3b866499183216ace337215cc.r2.dev"
 
         embed = discord.Embed(
             title="WHO IS THAT CHARACTER?",
@@ -385,7 +384,7 @@ class Umamusume(commands.Cog):
                             if hint_type == 'Voice':
                                 upload_msg = await ctx.send("Uploading Voice...")
 
-                                voice_url = f"{cdn_base_url}/{hint}"
+                                voice_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{hint}"
                                 output_file = Path("downloads/voice.ogg")
                                 
                                 command = [
