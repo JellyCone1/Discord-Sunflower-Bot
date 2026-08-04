@@ -6,6 +6,8 @@ from PIL import Image
 import aiohttp
 import io
 import re
+from googletrans import Translator, LANGUAGES, LANGCODES
+from discord import app_commands
 
 
 def count_nontransparent_pixels(img: Image.Image) -> int:
@@ -225,6 +227,39 @@ class Utility(commands.Cog):
 
 # <-------------------------------------------------------------------------------->
 
+
+    @app_commands.command(name='translate', description='Translate text using Google Translate')
+    @app_commands.describe(text="Text to translate", target_language="Target language (e.g. en, ja, fr)")
+    async def translate(self, interaction: discord.Interaction, text: str, target_language: str = 'en'):
+        GOOGLE_TRANSLATE_LOGO = "https://upload.wikimedia.org/wikipedia/commons/d/db/Google_Translate_Icon.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original"
+        target_language = target_language.lower()
+
+        if target_language not in LANGUAGES:
+            await interaction.response.send_message(
+                f"❌ `{target_language}` is not a supported language code.",
+                ephemeral=True
+            )
+            return
+
+
+        async with Translator() as translator:
+            result = await translator.translate(text, dest=target_language)
+            src = LANGUAGES[str(result.src.lower())]
+            dest = LANGUAGES[str(result.dest.lower())]
+
+        embed = discord.Embed(
+            title=f"Translated from {src.capitalize()} to {dest.capitalize()}",
+        )
+        embed.add_field(name=f"{src.capitalize()}:", value=f"```{text}```", inline=False)
+        embed.add_field(name=f"{dest.capitalize()}:", value=f"```{result.text}```", inline=False)
+
+        embed.set_footer(
+            text="Google Translate", 
+            icon_url=GOOGLE_TRANSLATE_LOGO
+        )
+
+        await interaction.response.send_message(embed=embed)
+    
 
     # ------------------ || UNUSED EXAMPLES || ------------------ #
     @commands.command()
