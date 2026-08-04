@@ -1,2 +1,30 @@
-2026-07-31 01:09:03,810:INFO:discord.client: logging in using static token
-2026-07-31 01:09:07,144:INFO:discord.gateway: Shard ID None has connected to Gateway (Session ID: f2fac39b6fb6a966d8e85b838927e79b).
+2026-08-04 19:06:42,443:INFO:discord.client: logging in using static token
+2026-08-04 19:06:44,766:INFO:discord.gateway: Shard ID None has connected to Gateway (Session ID: ec091b963781141fcacf85c4478aeed7).
+2026-08-04 19:08:53,248:ERROR:discord.app_commands.tree: Ignoring exception in command 'translate'
+Traceback (most recent call last):
+  File "S:\User\Languages\Python\Fun stuff\Discord Sunflower Bot\Discord-Sunflower-Bot(Latest)\.venv\Lib\site-packages\discord\app_commands\commands.py", line 858, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "S:\User\Languages\Python\Fun stuff\Discord Sunflower Bot\Discord-Sunflower-Bot(Latest)\cogs\utility.py", line 261, in translate
+    await interaction.response.send_message(embed=embed)
+  File "S:\User\Languages\Python\Fun stuff\Discord Sunflower Bot\Discord-Sunflower-Bot(Latest)\.venv\Lib\site-packages\discord\interactions.py", line 1051, in send_message
+    response = await adapter.create_interaction_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "S:\User\Languages\Python\Fun stuff\Discord Sunflower Bot\Discord-Sunflower-Bot(Latest)\.venv\Lib\site-packages\discord\webhook\async_.py", line 224, in request
+    raise NotFound(response, data)
+discord.errors.NotFound: 404 Not Found (error code: 10062): Unknown interaction
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "S:\User\Languages\Python\Fun stuff\Discord Sunflower Bot\Discord-Sunflower-Bot(Latest)\.venv\Lib\site-packages\discord\app_commands\tree.py", line 1297, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "S:\User\Languages\Python\Fun stuff\Discord Sunflower Bot\Discord-Sunflower-Bot(Latest)\.venv\Lib\site-packages\discord\app_commands\commands.py", line 884, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "S:\User\Languages\Python\Fun stuff\Discord Sunflower Bot\Discord-Sunflower-Bot(Latest)\.venv\Lib\site-packages\discord\app_commands\commands.py", line 877, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'translate' raised an exception: NotFound: 404 Not Found (error code: 10062): Unknown interaction
