@@ -10,6 +10,67 @@ from urllib.parse import quote
 import unicodedata
 import random
 import re
+from datetime import datetime, timezone
+from rapidfuzz import process, fuzz
+
+class CharacterIndexView(discord.ui.View):
+    def __init__(self, data, per_page=24):
+        super().__init__(timeout=120)
+
+        self.data = data
+        self.per_page = per_page
+        self.page = 0
+        self.max_page = (len(data) - 1) // per_page
+
+    def get_embed(self):
+        start = self.page * self.per_page
+        end = start + self.per_page
+
+        embed = discord.Embed(
+            title="🌻 Character Index",
+            description="List of available characters",
+            color=discord.Color.gold()
+        )
+
+        for name, web_id in self.data[start:end]:
+            embed.add_field(
+                name=name,
+                value=f"`{web_id}`",
+                inline=True
+            )
+
+        embed.set_footer(
+            text=f"Page {self.page + 1}/{self.max_page + 1} • {len(self.data)} characters"
+        )
+
+        return embed
+
+    async def update_message(self, interaction):
+        self.previous_button.disabled = self.page == 0
+        self.next_button.disabled = self.page == self.max_page
+
+        await interaction.response.edit_message(
+            embed=self.get_embed(),
+            view=self
+        )
+
+    @discord.ui.button(label="Previous", emoji="◀️", style=discord.ButtonStyle.secondary)
+    async def previous_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+        self.page -= 1
+        await self.update_message(interaction)
+
+    @discord.ui.button(label="Next", emoji="▶️", style=discord.ButtonStyle.secondary)
+    async def next_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+        self.page += 1
+        await self.update_message(interaction)
 
 
 class Umamusume(commands.Cog):
@@ -17,6 +78,20 @@ class Umamusume(commands.Cog):
         self.bot = bot
         self.command_prefix = "s!"
         self.CLOUDFLARE_R2_CDN_BASE_URL = "https://pub-0d1e39b3b866499183216ace337215cc.r2.dev"
+        self.DB_FILE = "data/character_endpoint.db"
+        self.USER_DB = Path("data/user_data.db")
+        self.user_data_table = "user_stats"
+        self.character_data = "character_data"
+        self.registered_users = set()
+        self.BASE_PTS = 100
+        self.PENALTY_BASE_PTS = {
+            'hints' : -10,
+            'rvl' : -50,
+            'gu' : -30,
+            'to' : -25,
+            'skipped' : -20,
+            'miss' : -15
+        }
 
         if platform.system() == 'Windows':
             self.FFMPEG = Path("bin/ffmpeg/ffmpeg.exe")
@@ -43,9 +118,6 @@ class Umamusume(commands.Cog):
     # 
 
     async def fetch_uma_data(self, difficulty: int, web_id=None) -> tuple:
-        DB_FILE = "data/character_endpoint.db"
-        
-        
         query1 = """
             SELECT web_id FROM character_data ORDER BY RANDOM() LIMIT 1
         """
@@ -178,7 +250,7 @@ class Umamusume(commands.Cog):
                 WHERE character_data.web_id = ?
             """
 
-        async with aiosqlite.connect(DB_FILE) as db: 
+        async with aiosqlite.connect(self.DB_FILE) as db: 
             if web_id is None:
                 async with db.execute(query1) as cursor:
                     random_pick = await cursor.fetchone()
@@ -218,6 +290,7 @@ class Umamusume(commands.Cog):
             else:
                 async with db.execute(query2, (web_id,)) as cursor:
                     row = await cursor.fetchone()
+                    random_pick = (web_id,)  # Assign web_id to random_pick for consistency
                     if row:
                         if difficulty == 2 or difficulty == 3:
                             name_en, name_jp, reveal_url, outfit_url = row
@@ -251,11 +324,7 @@ class Umamusume(commands.Cog):
         return name_en, name_jp, reveal_url, outfit_url, random_pick
 
 
-
-
-
     async def assist(self, web_id: int):
-        DB_FILE = "data/character_endpoint.db"
         keys = ['Name', 'Category', 'Birthday', 'Slogan', 'Ears Fact', 'Strengths', 'Weaknesses', 'Voice']
         hint_table = dict.fromkeys(keys)
         hints_list = []
@@ -273,7 +342,7 @@ class Umamusume(commands.Cog):
             FROM character_data WHERE web_id=?
         """
 
-        async with aiosqlite.connect(DB_FILE) as db:
+        async with aiosqlite.connect(self.DB_FILE) as db:
             async with db.execute(assist_query, web_id) as cursor:
                 row = await cursor.fetchone()
                 if row:
@@ -327,8 +396,21 @@ class Umamusume(commands.Cog):
         name_en, name_jp, reveal_url, outfit_url, key = await self.fetch_uma_data(difficulty=difficulty) if web_id is None else await self.fetch_uma_data(difficulty=difficulty, web_id=web_id)
         hints_list = []
         assists_used = False
-        hints_fetch_flag = False
+        hints_fetch_flag = False  # Fetch all hints only once
         timeout = False
+        player_table = {
+            'points' : 0,
+            'hints' : 0,
+            'hits' : 0,
+            'miss' : 0,
+            'rvl' : 0,
+            'gu' : 0,
+            'to' : 0,
+            'skipped' : 0
+        }
+
+        # Check if the user already exists
+        await self._check_newbie(ctx.author.id, ctx.author.global_name)
 
         embed = discord.Embed(
             title="WHO IS THAT CHARACTER?",
@@ -348,16 +430,23 @@ class Umamusume(commands.Cog):
             except asyncio.TimeoutError:
                 await ctx.send(f"**Tazuna**: Times UP!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}")
                 timeout = True
+                player_table['to'] = 1
                 break
             else:
                 user_guess = self.normalize_text(answer.content)
+
+                if user_guess is None:
+                    break
+
                 correct_answer = self.normalize_text(name_en)
 
                 if user_guess in ['gu', 'giveup']:
+                    player_table['gu'] = 1
                     break
 
                 elif user_guess in ['rvl', 'reveal'] and difficulty in [2, 3, 42, 43]:
                     reveal = True
+                    player_table['rvl'] = 1
                     break
 
                 elif user_guess in ['h', 'hint','ht']:
@@ -427,6 +516,7 @@ class Umamusume(commands.Cog):
                                 await upload_msg.delete()
 
                                 os.remove(output_file)
+                                player_table['hints'] += 1
 
                             else:
                                 embed = discord.Embed(
@@ -435,6 +525,7 @@ class Umamusume(commands.Cog):
                                     color=0x0000FF
                                 )
                                 await ctx.send(embed=embed)
+                                player_table['hints'] += 1
                                 assist += 1
                             
                             if assist >= 3:
@@ -449,17 +540,20 @@ class Umamusume(commands.Cog):
                         continue
 
                 elif user_guess.startswith(self.command_prefix):
+                    player_table['skipped'] = 1
                     break
                 elif user_guess == correct_answer:
                     await ctx.send(f"Correct! :white_check_mark: Approved by Tazuna\nTotal hints used: {assist}")
                     game_solved = True
+                    player_table['hits'] = 1 
                     break
                 else:
                     tries -= 1
+                    player_table['miss'] += 1
                     await ctx.send(f"Remaining Tries: {tries}")
         
         if tries <= 0 and game_solved == False:
-            await ctx.send(f"**Tazuna**: Unfortunately, all of your guesses were wrong, You need some personal tutoring!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}\nTotal hints used: {assist}")
+            await ctx.send(f"**Tazuna**: Unfortunately, all of your guesses were wrong, You need some personal tutoring!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}{f"\nTotal hints used: {assist}" if difficulty > 1 else ""}")
         elif user_guess.startswith(self.command_prefix) and game_solved == False:
             await ctx.send("Skipped :fast_forward:")
         elif tries > 0 and game_solved == False and reveal == True:
@@ -471,10 +565,274 @@ class Umamusume(commands.Cog):
             embed.set_image(url=reveal_url)
             await ctx.send(embed=embed)
         elif tries > 0 and game_solved == False and timeout == False:
-            await ctx.send(f"**Tazuna**: Giving up early? Let's try harder next time!\nThe Character in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}\nTotal hints used: {assist}")
+            await ctx.send(f"**Tazuna**: Giving up early? Let's try harder next time!\nThe Character in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}{f"\nTotal hints used: {assist}" if difficulty > 1 else ""}")
         else:
             pass
 
+        # Update Player Info
+        player_table['points'] = self._assign_points(difficulty, player_table)
+        print(player_table)
+        await self._db_updater(ctx.author.id, player_table)
+
+
+    async def _check_newbie(self, uid: int, uname: str):
+        if uid not in self.registered_users:
+            await self._db_init(uid, uname)
+            self.registered_users.add(uid)
+
+
+    async def _db_init(self, uid: int, uname: str):
+        query = f"""
+            INSERT OR IGNORE INTO {self.user_data_table} (user_id, user_name, recording_since)
+            VALUES (?, ?, ?)
+        """
+        async with aiosqlite.connect(self.USER_DB) as db:
+            await db.execute(query, (uid, uname, datetime.now(timezone.utc)))
+            await db.commit()
+
+
+    def _assign_points(self, diff: int, p_data: dict):
+        # 1. Map difficulty to multiplier
+        match diff:
+            case 1:
+                mult = 1.0
+            case 2 | 3:
+                mult = 1.5
+            case 42 | 43:
+                mult = 2.0
+            case _:
+                return 0
+
+        # 2. Early return for skipped games
+        if p_data.get('skipped', 0) != 0:
+            return self.PENALTY_BASE_PTS['skipped'] * mult
+
+        # 3. Unified point calculation
+        penalty = self._calc_penalty(p_data, mult)
+        return (self.BASE_PTS * mult) + penalty
+
+
+    def _calc_penalty(self, p_data, diff_mult):
+        penalty = (
+            p_data['hints'] * self.PENALTY_BASE_PTS['hints'] * diff_mult + 
+            p_data['rvl'] * self.PENALTY_BASE_PTS['rvl'] * diff_mult + 
+            p_data['gu'] * self.PENALTY_BASE_PTS['gu'] * diff_mult +
+            p_data['to'] * self.PENALTY_BASE_PTS['to'] * diff_mult +
+            p_data['skipped'] * self.PENALTY_BASE_PTS['skipped'] * diff_mult +
+            p_data['miss'] * self.PENALTY_BASE_PTS['miss'] * diff_mult
+        )
+        return penalty
+
+
+    async def _db_updater(self, uid: int, p_data: dict):
+        query = f"""
+            UPDATE {self.user_data_table} 
+            SET 
+                points = points + ?,
+                games_played = games_played + 1,
+                total_hits = total_hits + ?,
+                total_misses = total_misses + ?,
+                hints_used = hints_used + ?,
+                total_reveals = total_reveals + ?,
+                total_give_ups = total_give_ups + ?,
+                total_timeouts = total_timeouts + ?,
+                total_skips = total_skips + ?
+            WHERE user_id = ?
+        """
+
+        payload = (
+            p_data['points'],
+            p_data['hits'],
+            p_data['miss'],
+            p_data['hints'],
+            p_data['rvl'],
+            p_data['gu'],
+            p_data['to'],
+            p_data['skipped'],
+            uid
+        )
+
+        async with aiosqlite.connect(self.USER_DB) as db:
+            await db.execute(query, payload)
+            await db.commit()
+
+
+    @commands.command(aliases=['ur'])
+    async def user_reset(self, ctx, flag, target_uid):
+        """
+        Erases all data of the Target User except their Discord UID, Gloabl Name and Joining Time
+        given their UID
+        """
+        ADMIN_UID = os.getenv('ADMIN_UID','0')
+        target_uid = int(target_uid)
+
+        if ctx.author.id == ADMIN_UID:
+            if flag == '--hard':
+                query = f"""
+                    DELETE FROM {self.user_data_table} WHERE user_id=?;
+                """
+                bot_resp = f"User data for UID {target_uid} has been reset successfully."
+            elif flag == '--soft':
+                query = f"""
+                    UPDATE {self.user_data_table} 
+                    SET 
+                        points = 0,
+                        games_played = 0,
+                        total_hits = 0,
+                        total_misses = 0,
+                        hints_used = 0,
+                        total_reveals = 0,
+                        total_give_ups = 0,
+                        total_timeouts = 0,
+                        total_skips = 0
+                    WHERE user_id = ?
+                """
+                bot_resp = f"User data for UID {target_uid} has been erased successfully from the Database."
+            else:
+                await ctx.send("**Incorrect reset flag**\nReset flag opts:\n- `--soft`\n- `--hard`\n" \
+                "**Example Usage**\n- `<prefix>user_reset [opt] <target_uid>` : Keeps user entry in Database and *resets all progress.*\n" \
+                "- `<prefix>ur [opt] <target_uid>` : *Deletes the user's Entry* from the Database.")
+                return
+
+            async with aiosqlite.connect(self.USER_DB) as db:
+                await db.execute(query, (int(target_uid),))
+                await db.commit()
+
+            await ctx.send(bot_resp)
+        else:
+            await ctx.send("You are not authorized to perform this action. Only the bot owner can reset user data.")
+
+    @commands.command()
+    async def stats(self, ctx, target_uid: discord.User = None):
+        query = f"""
+            SELECT 
+                points, 
+                games_played, 
+                total_hits, 
+                total_misses, 
+                hints_used, 
+                total_reveals, 
+                total_give_ups, 
+                total_timeouts, 
+                total_skips 
+            FROM {self.user_data_table} WHERE user_id=?
+        """
+
+        if target_uid:
+            user = await self.bot.fetch_user(target_uid.id)
+            uid = target_uid.id
+            global_name = user.display_name
+            pfp_url = user.display_avatar.url
+        else:
+            uid = ctx.author.id
+            global_name = ctx.author.global_name
+            pfp_url = ctx.author.display_avatar.url
+
+        async with aiosqlite.connect(self.USER_DB) as db:
+            async with db.execute(query, (uid,)) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    points, games_played, total_hits, total_misses, hints_used, total_reveals, total_give_ups, total_timeouts, total_skips = row
+                    hit_rate = total_hits / (total_hits + total_misses) if (total_hits + total_misses) > 0 else 0.0
+                    avg_hints = hints_used / games_played if games_played else 0
+                else:
+                    points = games_played = total_hits = total_misses = hints_used = total_reveals = total_give_ups = total_timeouts = total_skips = 0
+                    hit_rate = 0.0
+                    avg_hints = hints_used / games_played if games_played else 0
+
+        embed = discord.Embed(
+            title="🌻 Sunflower — Player Statistics",
+            description=f"**{global_name}**",
+            color=discord.Color.gold()
+        )
+
+        embed.add_field(
+            name="🏆 Overall",
+            value=(
+                f"**Points:** `{points:,}`\n"
+                f"**Games Played:** `{games_played:,}`"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="🎯 Performance",
+            value=(
+                f"**Hits:** `{total_hits:,}`\n"
+                f"**Misses:** `{total_misses:,}`\n"
+                f"**Hit Rate:** `{hit_rate:.1%}`"
+            ),
+            inline=True
+        )
+
+        embed.add_field(
+            name="💡 Assistance",
+            value=(
+                f"**Hints Used:** `{hints_used:,}`\n"
+                f"**Avg. Hints/Game:** `{avg_hints:.2f}`\n"
+                f"**Reveals:** `{total_reveals:,}`"
+            ),
+            inline=True
+        )
+
+        embed.add_field(
+            name="📊 Game Outcomes",
+            value=(
+                f"**Give Ups:** `{total_give_ups:,}`\n"
+                f"**Timeouts:** `{total_timeouts:,}`\n"
+                f"**Skips:** `{total_skips:,}`"
+            ),
+            inline=False
+        )
+
+        embed.set_thumbnail(url=pfp_url)
+
+        embed.set_footer(
+            text="Sunflower • Player Statistics"
+        )
+
+        await ctx.reply(embed=embed, mention_author=False)
+        if games_played == 0 and uid == ctx.author.id:
+            await ctx.send("Play some games to start recording your stats!")
+        elif games_played == 0 and uid != ctx.author.id:
+            await ctx.send(f"**{global_name}** has not guessed any characters from the super hit game **UMAMUSUME : PRETTY DERBY!**")
+        else:
+            pass
+
+
+    @commands.command(aliases=['ci', 'chr_idx'])
+    async def character_index(self, ctx, search_term=None):
+        query = f"""
+            SELECT name_en, web_id from {self.character_data}
+        """
+        async with aiosqlite.connect(self.DB_FILE) as db:
+            async with db.execute(query) as cursor:
+                data = await cursor.fetchall()
+
+        if search_term:
+            characters = {
+                name: web_id
+                for name, web_id in data
+            }
+
+            results = process.extract(
+                search_term,
+                characters.keys(),
+                scorer=fuzz.WRatio,
+                limit=10
+            )
+
+            data = [
+                (name, characters[name])
+                for name, score, _ in results
+                if score >= 60
+            ]
+
+        # for name, id, score in data:
+        #     print(name, id, score)
+
+        view = CharacterIndexView(data)
+        await ctx.send(embed=view.get_embed(), view=view)
 
 
 async def setup(bot):
