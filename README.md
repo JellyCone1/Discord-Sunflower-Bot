@@ -76,15 +76,22 @@ Note: The exact behavior and set of commands depend on which cogs/modules are lo
 
 2. Create and activate a virtual environment (recommended):
 
-   python -m venv .venv
+   ```python -m venv .venv```
+
    # Windows
-   .venv\Scripts\activate
+   Disable PowerShell script execution restrictions only for your current terminal session
+   ```Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process```
+
+   Activate your Virtual Environment 
+   ```.venv\Scripts\activate```
+
    # macOS / Linux
-   source .venv/bin/activate
+   Activate your Virtual Environment
+   ```source .venv/bin/activate```
 
-3. Install dependencies:
+4. Install dependencies:
 
-   pip install -r requirements.txt
+   ```pip install -r requirements.txt```
 
 If the repository uses Poetry or pyproject.toml, follow that project's preferred workflow instead.
 
