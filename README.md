@@ -71,23 +71,33 @@ Note: The exact behavior and set of commands depend on which cogs/modules are lo
 
 1. Clone the repository:
 
+   ```
    git clone https://github.com/JellyCone1/Discord-Sunflower-Bot.git
    cd Discord-Sunflower-Bot
+   ```
 
 2. Create and activate a virtual environment (recommended):
 
-   ```python -m venv .venv```
+   ```
+   python -m venv .venv
+   ```
 
    # Windows
    Disable PowerShell script execution restrictions only for your current terminal session
-   ```Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process```
+   ```
+   Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+   ```
 
    Activate your Virtual Environment 
-   ```.venv\Scripts\activate```
+   ```
+   .venv\Scripts\activate
+   ```
 
    # macOS / Linux
    Activate your Virtual Environment
-   ```source .venv/bin/activate```
+   ```
+   source .venv/bin/activate
+   ```
 
 4. Install dependencies:
 
