@@ -1,10 +1,10 @@
-# Discord Sunflower Bot v0.2.0
+# Discord Sunflower Bot v0.3.0
 
 The repository for Hamsteria's Discord Server custom personal bot for moderation, utilities, and media playback.
 
 🌻 Welcome to Sunflower!
 
-Sunflower (command prefix: `s!`) is a lightweight, Python-based Discord bot created to help moderate and manage the Hamsteria server. It includes moderation utilities, fun/utility commands, image tools, and basic music controls (slash commands).
+Sunflower (command prefix: `s!`) is a lightweight, Python-based Discord bot created to help moderate and manage the Hamsteria server. It includes moderation utilities, fun/utility commands, image tools, user data tracking, and music playback.
 
 ---
 
@@ -30,6 +30,9 @@ Sunflower (command prefix: `s!`) is a lightweight, Python-based Discord bot crea
 - Moderation helpers: selective message deletion and purge commands
 - Image utilities: pixel counting for attached images
 - Fun & utility commands: coin flip, random numbers, simple chat replies
+- User data tracking: automatically track user activity and statistics
+- Stats view: display user statistics and activity summaries
+- Uma character search: search and view umamusume characters
 - Basic music controls via slash commands (YouTube audio streaming)
 - Extensible architecture: add new cogs/modules to extend functionality
 
@@ -49,6 +52,8 @@ Note: The exact behavior and set of commands depend on which cogs/modules are lo
 - `s!purgeall <count:int>` — Delete up to <count> recent messages (including starred messages).
 - `s!whoisthatuma {ids}` — UmaGuesser: guess umamusume character(s) by id(s).
 - `s!uma_r` — Shows a random umamusume character.
+- `s!uma_search <query>` — Search for umamusume characters by name or query.
+- `s!stats [user]` — Display user statistics and activity summary.
 
 ### Slash (/) commands
 
@@ -158,6 +163,7 @@ If you'd like, I can also:
 
 - v0.1.1 — Initial public readme content and early command set.
 - v0.2.0 — Added UmaGuesser commands and clarified purge behavior; updated README.
+- v0.3.0 — Added user data tracking, stats view, and uma-search functionality.
 
 ---
 
