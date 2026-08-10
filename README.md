@@ -4,7 +4,7 @@ The repository for Hamsteria's Discord Server custom personal bot for moderation
 
 🌻 Welcome to Sunflower!
 
-Sunflower (command prefix: `s!`) is a lightweight, Python-based Discord bot created to help moderate and manage the Hamsteria server. It includes moderation utilities, fun/utility commands, image tools, user data tracking, and music playback.
+Sunflower (command prefix: `s!`) is a lightweight, Python-based Discord bot created to help moderate and manage the Hamsteria server. It includes moderation utilities, fun/utility commands, image tools, persistent player data, and music playback.
 
 ---
 
@@ -30,9 +30,9 @@ Sunflower (command prefix: `s!`) is a lightweight, Python-based Discord bot crea
 - Moderation helpers: selective message deletion and purge commands
 - Image utilities: pixel counting for attached images
 - Fun & utility commands: coin flip, random numbers, simple chat replies
-- User data tracking: automatically track user activity and statistics
+- Persistent Player Data Storage: automatically records and stores Player's Data for future references
 - Stats view: display user statistics and activity summaries
-- Uma character search: search and view umamusume characters
+- Uma character search: search for Umamusume Characters to get their `web_id` to view them as an argument to `s!uma_r web_id`
 - Basic music controls via slash commands (YouTube audio streaming)
 - Extensible architecture: add new cogs/modules to extend functionality
 
@@ -52,7 +52,8 @@ Note: The exact behavior and set of commands depend on which cogs/modules are lo
 - `s!purgeall <count:int>` — Delete up to <count> recent messages (including starred messages).
 - `s!whoisthatuma {ids}` — UmaGuesser: guess umamusume character(s) by id(s).
 - `s!uma_r` — Shows a random umamusume character.
-- `s!uma_search <query>` — Search for umamusume characters by name or query.
+- `s!uma_r <web_id>` — Shows an umamusume character with supplied `web_id`.
+- `s!ci <search_term>` — Search for umamusume characters by name.
 - `s!stats [user]` — Display user statistics and activity summary.
 
 ### Slash (/) commands
@@ -63,7 +64,7 @@ Note: The exact behavior and set of commands depend on which cogs/modules are lo
 - `/resume` — Resume a paused song.
 - `/clear` — Clear the music queue and stop playback (does not disconnect from voice channel).
 - `/disconnect` — Disconnect the bot from the voice channel.
-
+- `/translate [text] [lang_code]` — Translates `text` to target `lang_code`, default `lang_code` is `en`(English)
 ---
 
 ## Installation
@@ -97,28 +98,22 @@ Create a `.env` file in the project root with the following (example):
 
 ```
 DISCORD_TOKEN=your_discord_bot_token_here
-PREFIX=s!
-OWNER_ID=123456789012345678
-LOG_CHANNEL_ID=987654321098765432
+ADMIN_UID=your_uid
 ```
 
 - DISCORD_TOKEN — (required) Your bot token from the Discord Developer Portal.
-- PREFIX — (optional) Command prefix (defaults to `s!`).
-- OWNER_ID — (optional) Your Discord user ID for owner-only commands.
-- LOG_CHANNEL_ID — (optional) Channel ID for moderation/log messages.
-
-If the project uses a configuration file (e.g., `config.json`), follow that file instead.
+- ADMIN_UID — (required) for soft/hard deletion of player stats
 
 ---
 
 ## Running the bot
 
-Identify the repository's entrypoint (a file that creates a `commands.Bot` or `discord.Client` instance and calls `run`). Common entrypoints are `bot.py`, `main.py`, or a package `__main__`.
+Just run `main.py` following the Example below in your terminal of choice vv
 
 Example:
 
 ```
-python bot.py
+python ./main.py
 ```
 
 Run the command from within the activated virtual environment after installing dependencies and setting configuration.
@@ -138,7 +133,6 @@ Please follow any existing contribution guidelines or a CODE_OF_CONDUCT if prese
 
 If you'd like, I can also:
 - Add a `.env.example` file with the recommended keys, or
-- Scan the repository to list the actual command implementations and the true entrypoint.
 
 ---
 
@@ -163,7 +157,7 @@ If you'd like, I can also:
 
 - v0.1.1 — Initial public readme content and early command set.
 - v0.2.0 — Added UmaGuesser commands and clarified purge behavior; updated README.
-- v0.3.0 — Added user data tracking, stats view, and uma-search functionality.
+- v0.3.0 — Added Persistent Player Data Storage, Stats View, and uma-search functionality.
 
 ---
 
@@ -174,13 +168,5 @@ If you'd like, I can also:
 
 ---
 
-## License
-
-If this repository does not contain a LICENSE file, consider adding one (for example, the MIT License) to clarify reuse terms. If a license is already present, follow its terms.
-
----
-
 Thank you for using Sunflower 🌻 — if you want, I can:
 - Add `.env.example` to the repo now,
-- Run a quick code scan to produce an exact list of commands and the bot entrypoint, or
-- Create a CONTRIBUTING.md template.
