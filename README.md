@@ -1,4 +1,4 @@
-# Discord Sunflower Bot v0.3.1
+# Discord Sunflower Bot v0.4.1
 
 The repository for Hamsteria's Discord Server custom personal bot for moderation, utilities, and media playback.
 
