@@ -12,6 +12,7 @@ import random
 import re
 from datetime import datetime, timezone
 from rapidfuzz import process, fuzz
+import time
 
 class CharacterIndexView(discord.ui.View):
     def __init__(self, data, per_page=24):
@@ -84,6 +85,8 @@ class Umamusume(commands.Cog):
         self.character_data = "character_data"
         self.registered_users = set()
         self.BASE_PTS = 100
+        self.sandbox_users = {}
+        self.sandbox_cd = {}
         self.PENALTY_BASE_PTS = {
             'hints' : -10,
             'rvl' : -50,
@@ -102,12 +105,15 @@ class Umamusume(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        await self._sync_sandbox_data()
         print(f"{__name__} is online!")
+
 
     def check_message_ownership(self, ctx):
         def check(m):
             return m.author == ctx.author and m.channel == ctx.channel
         return check
+
 
     def normalize_text(self, s: str) -> str:
         s = unicodedata.normalize("NFKD", s)
@@ -115,9 +121,8 @@ class Umamusume(commands.Cog):
         s = re.sub(r"\s+", "", s)
         return s
 
-    # 
 
-    async def fetch_uma_data(self, difficulty: int, web_id=None) -> tuple:
+    async def fetch_uma_data(self, difficulty: int, caller_id, sandbox_state, web_id=None) -> tuple:
         query1 = """
             SELECT web_id FROM character_data ORDER BY RANDOM() LIMIT 1
         """
@@ -149,35 +154,6 @@ class Umamusume(commands.Cog):
                         character_reveal_modif.default_img_url
                     ) AS reveal_img,
                     COALESCE(
-                        character_silhouette_modif.racewear_img_url, 
-                        character_silhouette_modif.uniform_img_url, 
-                        character_silhouette_modif.concept_art_img_url, 
-                        character_silhouette_modif.stage_uniform_url, 
-                        character_silhouette_modif.default_img_url
-                    ) AS silhouette_img
-                FROM character_data
-
-                JOIN character_reveal_modif
-                ON character_data.web_id = character_reveal_modif.web_id
-
-                JOIN character_silhouette_modif
-                ON character_data.web_id = character_silhouette_modif.web_id 
-                WHERE character_data.web_id = ?
-            """
-        
-        if difficulty == 3:
-            query2 = """
-                SELECT 
-                    character_data.name_en, 
-                    character_data.name_jp,
-                    COALESCE(
-                        character_reveal_modif.racewear_img_url, 
-                        character_reveal_modif.uniform_img_url, 
-                        character_reveal_modif.concept_art_img_url, 
-                        character_reveal_modif.stage_uniform_url, 
-                        character_reveal_modif.default_img_url
-                    ) AS reveal_img,
-                    COALESCE(
                         character_blur_modif.racewear_img_url, 
                         character_blur_modif.uniform_img_url, 
                         character_blur_modif.concept_art_img_url, 
@@ -194,24 +170,25 @@ class Umamusume(commands.Cog):
                 WHERE character_data.web_id = ?
             """
         
-        if difficulty == 42:
+        if difficulty == 3:
             query2 = """
                 SELECT 
                     character_data.name_en, 
                     character_data.name_jp,
-
-                    character_reveal_modif.racewear_img_url, 
-                    character_reveal_modif.uniform_img_url, 
-                    character_reveal_modif.concept_art_img_url, 
-                    character_reveal_modif.stage_uniform_url, 
-                    character_reveal_modif.default_img_url,
-
-                    character_silhouette_modif.racewear_img_url, 
-                    character_silhouette_modif.uniform_img_url, 
-                    character_silhouette_modif.concept_art_img_url, 
-                    character_silhouette_modif.stage_uniform_url, 
-                    character_silhouette_modif.default_img_url
-
+                    COALESCE(
+                        character_reveal_modif.racewear_img_url, 
+                        character_reveal_modif.uniform_img_url, 
+                        character_reveal_modif.concept_art_img_url, 
+                        character_reveal_modif.stage_uniform_url, 
+                        character_reveal_modif.default_img_url
+                    ) AS reveal_img,
+                    COALESCE(
+                        character_silhouette_modif.racewear_img_url, 
+                        character_silhouette_modif.uniform_img_url, 
+                        character_silhouette_modif.concept_art_img_url, 
+                        character_silhouette_modif.stage_uniform_url, 
+                        character_silhouette_modif.default_img_url
+                    ) AS silhouette_img
                 FROM character_data
 
                 JOIN character_reveal_modif
@@ -221,8 +198,9 @@ class Umamusume(commands.Cog):
                 ON character_data.web_id = character_silhouette_modif.web_id 
                 WHERE character_data.web_id = ?
             """
-
-        if difficulty == 43:
+            
+        
+        if difficulty == 42:
             query2 = """
                 SELECT 
                     character_data.name_en, 
@@ -250,6 +228,35 @@ class Umamusume(commands.Cog):
                 WHERE character_data.web_id = ?
             """
 
+        if difficulty == 43:
+            query2 = """
+                SELECT 
+                    character_data.name_en, 
+                    character_data.name_jp,
+
+                    character_reveal_modif.racewear_img_url, 
+                    character_reveal_modif.uniform_img_url, 
+                    character_reveal_modif.concept_art_img_url, 
+                    character_reveal_modif.stage_uniform_url, 
+                    character_reveal_modif.default_img_url,
+
+                    character_silhouette_modif.racewear_img_url, 
+                    character_silhouette_modif.uniform_img_url, 
+                    character_silhouette_modif.concept_art_img_url, 
+                    character_silhouette_modif.stage_uniform_url, 
+                    character_silhouette_modif.default_img_url
+
+                FROM character_data
+
+                JOIN character_reveal_modif
+                ON character_data.web_id = character_reveal_modif.web_id
+
+                JOIN character_silhouette_modif
+                ON character_data.web_id = character_silhouette_modif.web_id 
+                WHERE character_data.web_id = ?
+            """
+            
+
         async with aiosqlite.connect(self.DB_FILE) as db: 
             if web_id is None:
                 async with db.execute(query1) as cursor:
@@ -265,22 +272,22 @@ class Umamusume(commands.Cog):
                         
                         elif difficulty == 42:
                             name_en, name_jp, *urls = row
-                            silhouette_urls = [u for u in urls[5:] if u is not None]
-                            reveal_urls = [u for u in urls[:5] if u is not None]
-                            
-                            selector = random.randint(0, len(silhouette_urls) - 1)
-                            
-                            outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(silhouette_urls[selector])}"
-                            reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_urls[selector])}"
-
-                        elif difficulty == 43:
-                            name_en, name_jp, *urls = row
                             blur_urls = [u for u in urls[5:] if u is not None]
                             reveal_urls = [u for u in urls[:5] if u is not None]
                             
                             selector = random.randint(0, len(blur_urls) - 1)
                             
                             outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(blur_urls[selector])}"
+                            reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_urls[selector])}"
+
+                        elif difficulty == 43:
+                            name_en, name_jp, *urls = row
+                            silhouette_urls = [u for u in urls[5:] if u is not None]
+                            reveal_urls = [u for u in urls[:5] if u is not None]
+                            
+                            selector = random.randint(0, len(silhouette_urls) - 1)
+                            
+                            outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(silhouette_urls[selector])}"
                             reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_urls[selector])}"
 
                         else:
@@ -288,38 +295,42 @@ class Umamusume(commands.Cog):
                             reveal_url = outfit_url
             
             else:
-                async with db.execute(query2, (web_id,)) as cursor:
-                    row = await cursor.fetchone()
-                    random_pick = (web_id,)  # Assign web_id to random_pick for consistency
-                    if row:
-                        if difficulty == 2 or difficulty == 3:
-                            name_en, name_jp, reveal_url, outfit_url = row
-                            outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(outfit_url)}"
-                            reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_url)}"
-                        
-                        elif difficulty == 42:
-                            name_en, name_jp, *urls = row
-                            silhouette_urls = [u for u in urls[5:] if u is not None]
-                            reveal_urls = [u for u in urls[:5] if u is not None]
+                ADMIN_UID=int(os.getenv('ADMIN_UID', 0))
+                if (caller_id == ADMIN_UID) or sandbox_state:
+                    async with db.execute(query2, (web_id,)) as cursor:
+                        row = await cursor.fetchone()
+                        random_pick = (web_id,)  # Assign web_id to random_pick for consistency
+                        if row:
+                            if difficulty == 2 or difficulty == 3:
+                                name_en, name_jp, reveal_url, outfit_url = row
+                                outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(outfit_url)}"
+                                reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_url)}"
                             
-                            selector = random.randint(0, len(silhouette_urls) - 1)
-                            
-                            outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(silhouette_urls[selector])}"
-                            reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_urls[selector])}"
+                            elif difficulty == 42:
+                                name_en, name_jp, *urls = row
+                                reveal_urls = [u for u in urls[:5] if u is not None]
+                                blur_urls = [u for u in urls[5:] if u is not None]
+                                
+                                selector = random.randint(0, len(blur_urls) - 1)
+                                
+                                outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(blur_urls[selector])}"
+                                reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_urls[selector])}"
 
-                        elif difficulty == 43:
-                            name_en, name_jp, *urls = row
-                            reveal_urls = [u for u in urls[:5] if u is not None]
-                            blur_urls = [u for u in urls[5:] if u is not None]
+                            elif difficulty == 43:
+                                name_en, name_jp, *urls = row
+                                silhouette_urls = [u for u in urls[5:] if u is not None]
+                                reveal_urls = [u for u in urls[:5] if u is not None]
+                                
+                                selector = random.randint(0, len(silhouette_urls) - 1)
+                                
+                                outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(silhouette_urls[selector])}"
+                                reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_urls[selector])}"
                             
-                            selector = random.randint(0, len(blur_urls) - 1)
-                            
-                            outfit_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(blur_urls[selector])}"
-                            reveal_url = f"{self.CLOUDFLARE_R2_CDN_BASE_URL}/{quote(reveal_urls[selector])}"
-                        
-                        else:
-                            name_en, name_jp, outfit_url = row
-                            reveal_url = outfit_url
+                            else:
+                                name_en, name_jp, outfit_url = row
+                                reveal_url = outfit_url
+                else:
+                    return (-1, -1, -1, -1, -1)
         
         return name_en, name_jp, reveal_url, outfit_url, random_pick
 
@@ -371,7 +382,11 @@ class Umamusume(commands.Cog):
     # key AKA web_id
     @commands.command()
     async def uma_r(self, ctx, web_id=None):
-        name_en, name_jp, reveal_url, outfit_url, key = await self.fetch_uma_data(difficulty=1) if web_id is None else await self.fetch_uma_data( difficulty=1, web_id=web_id)
+        ADMIN_UID=int(os.getenv('ADMIN_UID', 0))
+        sandbox_state = bool(self.sandbox_users.get(ctx.author.id, False))
+
+        name_en, name_jp, reveal_url, outfit_url, key = await self.fetch_uma_data(difficulty=1, caller_id=ADMIN_UID, sandbox_state=sandbox_state) \
+            if web_id is None else await self.fetch_uma_data(difficulty=1, caller_id=ADMIN_UID, sandbox_state=sandbox_state, web_id=web_id)
         embed = discord.Embed(
             title=name_en,
             description=name_jp,
@@ -383,17 +398,27 @@ class Umamusume(commands.Cog):
 
    
     @commands.command()
-    async def join(self, ctx):
-        await ctx.author.voice.channel.connect()
-
-   
-    @commands.command()
     async def whoisthatuma(self, ctx, difficulty: int, web_id=None):
         tries = 3
         assist = 0
         reveal = False
         game_solved = False
-        name_en, name_jp, reveal_url, outfit_url, key = await self.fetch_uma_data(difficulty=difficulty) if web_id is None else await self.fetch_uma_data(difficulty=difficulty, web_id=web_id)
+        sandbox_state = bool(self.sandbox_users.get(ctx.author.id, False))
+        name_en, name_jp, reveal_url, outfit_url, key = \
+            await \
+                self.fetch_uma_data(
+                    difficulty=difficulty, 
+                    caller_id=ctx.author.id, 
+                    sandbox_state=sandbox_state
+                ) \
+            if web_id is None else \
+                await \
+                    self.fetch_uma_data(
+                        difficulty=difficulty, 
+                        caller_id=ctx.author.id, 
+                        sandbox_state=sandbox_state, 
+                        web_id=web_id
+                    )
         hints_list = []
         assists_used = False
         hints_fetch_flag = False  # Fetch all hints only once
@@ -409,11 +434,15 @@ class Umamusume(commands.Cog):
             'skipped' : 0
         }
 
+        if name_en == -1:
+            await ctx.send("❌ You are not authorized to use this command outside of **Sandbox Mode**!")
+            return
+        
         # Check if the user already exists
         await self._check_newbie(ctx.author.id, ctx.author.global_name)
 
         embed = discord.Embed(
-            title="WHO IS THAT CHARACTER?",
+            title="WHO IS THAT CHARACTER?" if not sandbox_state else "WHO IS THAT CHARACTER? ⏳",
             description="Answer it to get 1 point of appreciation from Tazuna\nYou have 3 Tries to hit!\nType 'giveup' or 'gu' to give up",
             color=0xFFFF00
         )
@@ -430,6 +459,7 @@ class Umamusume(commands.Cog):
             except asyncio.TimeoutError:
                 await ctx.send(f"**Tazuna**: Times UP!\nThe Umamusume in Question is:\nEnglish Name: **{name_en}**\nJapanese Name: {name_jp}")
                 timeout = True
+                user_guess = ""
                 player_table['to'] = 1
                 break
             else:
@@ -570,9 +600,11 @@ class Umamusume(commands.Cog):
             pass
 
         # Update Player Info
-        player_table['points'] = self._assign_points(difficulty, player_table)
+        if not sandbox_state:
+            player_table['points'] = self._assign_points(difficulty, player_table)
+            await self._db_updater(ctx.author.id, player_table)
         print(player_table)
-        await self._db_updater(ctx.author.id, player_table)
+
 
 
     async def _check_newbie(self, uid: int, uname: str):
@@ -598,8 +630,10 @@ class Umamusume(commands.Cog):
                 mult = 1.0
             case 2 | 3:
                 mult = 1.5
-            case 42 | 43:
+            case 42:
                 mult = 2.0
+            case 43:
+                mult = 2.5
             case _:
                 return 0
 
@@ -658,12 +692,12 @@ class Umamusume(commands.Cog):
 
 
     @commands.command(aliases=['ur'])
-    async def user_reset(self, ctx, flag, target_uid):
+    async def user_reset(self, ctx, target_uid, flag=None):  # UNTESTED
         """
         Erases all data of the Target User except their Discord UID, Gloabl Name and Joining Time
         given their UID
         """
-        ADMIN_UID = os.getenv('ADMIN_UID','0')
+        ADMIN_UID = int(os.getenv('ADMIN_UID', 0))
         target_uid = int(target_uid)
 
         if ctx.author.id == ADMIN_UID:
@@ -690,8 +724,8 @@ class Umamusume(commands.Cog):
                 bot_resp = f"User data for UID {target_uid} has been erased successfully from the Database."
             else:
                 await ctx.send("**Incorrect reset flag**\nReset flag opts:\n- `--soft`\n- `--hard`\n" \
-                "**Example Usage**\n- `<prefix>user_reset [opt] <target_uid>` : Keeps user entry in Database and *resets all progress.*\n" \
-                "- `<prefix>ur [opt] <target_uid>` : *Deletes the user's Entry* from the Database.")
+                "**Example Usage**\n- `<prefix>user_reset <target_uid> [opt]` : Keeps user entry in Database and *resets all progress.*\n" \
+                "- `<prefix>ur <target_uid> [opt]` : *Deletes the user's Entry* from the Database.")
                 return
 
             async with aiosqlite.connect(self.USER_DB) as db:
@@ -801,7 +835,7 @@ class Umamusume(commands.Cog):
 
 
     @commands.command(aliases=['ci', 'chr_idx'])
-    async def character_index(self, ctx, search_term=None):
+    async def character_index(self, ctx, search_term=None):  # NEED DEEPDIVE
         query = f"""
             SELECT name_en, web_id from {self.character_data}
         """
@@ -835,5 +869,75 @@ class Umamusume(commands.Cog):
         await ctx.send(embed=view.get_embed(), view=view)
 
 
+    @commands.command(aliases=['sb', 'sbox'])
+    async def sandbox(self, ctx):
+        """Enables/Disables Sandbox mode"""
+        uid = ctx.author.id
+        now = time.time()
+        wait_time = 10
+        sandbox_flag = await self._check_sandbox(uid)
+
+        if uid in self.sandbox_cd:
+            elapsed = now - self.sandbox_cd[uid]
+            if elapsed < wait_time:
+                left = int(wait_time - elapsed)
+                await ctx.send(f"🛑 Please wait for **{left}** more seconds to invoke the command again.")
+                return
+            else:
+                del self.sandbox_cd[uid]
+
+        query1 = f"""
+            UPDATE {self.user_data_table} SET sandbox_mode = 1 WHERE user_id = ?
+        """
+        query2= f"""
+            UPDATE {self.user_data_table} SET sandbox_mode = 0 WHERE user_id = ?
+        """
+
+        async with aiosqlite.connect(self.USER_DB) as db:
+            if sandbox_flag:
+                await db.execute(query2, (int(uid),))
+                del self.sandbox_users[uid]
+                await ctx.send("You are now **OUT** of Sandbox mode. No more playing around now~ 💪\nPlayer Data **Points Recording Continues...**")
+            else:
+                await db.execute(query1, (int(uid),))
+                self.sandbox_users[uid] = True
+                await ctx.send("You are now **IN** Sandbox mode. Experiment all you want ⏳\nPlayer Data **Points Recording Discontinues...**")
+
+            await db.commit()
+
+        self.sandbox_cd[uid] = now            
+
+
+    async def _check_sandbox(self, uid: int):
+        query = f"""
+            SELECT sandbox_mode FROM {self.user_data_table} WHERE user_id = ?
+        """
+
+        async with aiosqlite.connect(self.USER_DB) as db:
+            async with db.execute(query, (uid,)) as cursor:
+                row = await cursor.fetchone()
+                sandbox_flag = bool(row[0]) if row else False
+
+                if sandbox_flag:
+                    self.sandbox_users[uid] = True
+
+        return sandbox_flag
+
+
+    async def _sync_sandbox_data(self):
+        query = f"""
+            SELECT user_id, sandbox_mode FROM {self.user_data_table};
+        """
+
+        async with aiosqlite.connect(self.USER_DB) as db:
+            async with db.execute(query) as cursor:
+                row = await cursor.fetchall()
+                for i in row:
+                    if i[1] and self.sandbox_users.get(i[0], True):  # If Sandbox status is true is DB but not in Memory
+                        self.sandbox_users[i[0]] = True
+                    else:
+                        continue
+                        
+    
 async def setup(bot):
     await bot.add_cog(Umamusume(bot))
