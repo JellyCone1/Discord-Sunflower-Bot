@@ -176,7 +176,7 @@ If you'd like, I can also:
 - v0.1.1 — Initial public readme content and early command set.
 - v0.2.0 — Added UmaGuesser commands and clarified purge behavior; updated README.
 - v0.3.0 — Added Persistent Player Data Storage, Stats View, and uma-search functionality.
-- v0.3.1 — Added Sandbox Mode, Balance Changes and minor bugfixes
+- v0.4.1 — Added Sandbox Mode, Balance Changes and minor bugfixes
 
 ---
 
