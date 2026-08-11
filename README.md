@@ -1,4 +1,4 @@
-# Discord Sunflower Bot v0.3.0
+# Discord Sunflower Bot v0.3.1
 
 The repository for Hamsteria's Discord Server custom personal bot for moderation, utilities, and media playback.
 
@@ -55,6 +55,7 @@ Note: The exact behavior and set of commands depend on which cogs/modules are lo
 - `s!uma_r <web_id>` — Shows an umamusume character with supplied `web_id`.
 - `s!ci <search_term>` — Search for umamusume characters by name.
 - `s!stats [user]` — Display user statistics and activity summary.
+- `s!sb` — Enter Sandbox mode, in Sandbox mode, your Stats are not affected upon any `whoisthatuma` calls
 
 ### Slash (/) commands
 
@@ -175,6 +176,7 @@ If you'd like, I can also:
 - v0.1.1 — Initial public readme content and early command set.
 - v0.2.0 — Added UmaGuesser commands and clarified purge behavior; updated README.
 - v0.3.0 — Added Persistent Player Data Storage, Stats View, and uma-search functionality.
+- v0.3.1 — Added Sandbox Mode, Balance Changes and minor bugfixes
 
 ---
 
