@@ -870,12 +870,19 @@ class Umamusume(commands.Cog):
 
 
     @commands.command(aliases=['sb', 'sbox'])
-    async def sandbox(self, ctx):
+    async def sandbox(self, ctx, flag=None):
         """Enables/Disables Sandbox mode"""
         uid = ctx.author.id
         now = time.time()
         wait_time = 10
         sandbox_flag = await self._check_sandbox(uid)
+
+        if flag == '?':
+            if sandbox_flag:
+                await ctx.send("You are Currently **IN** Sandbox Mode ⏳")
+            else:
+                await ctx.send("You are Currently **NOT IN** Sandbox Mode 💪")                
+            return
 
         if uid in self.sandbox_cd:
             elapsed = now - self.sandbox_cd[uid]
