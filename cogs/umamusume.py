@@ -80,7 +80,7 @@ class Umamusume(commands.Cog):
         self.command_prefix = "s!"
         self.CLOUDFLARE_R2_CDN_BASE_URL = "https://pub-0d1e39b3b866499183216ace337215cc.r2.dev"
         self.DB_FILE = "data/character_endpoint.db"
-        self.USER_DB = Path("data/user_data.db")
+        self.USER_DB = Path("../bot_user_db/user_data.db")
         self.user_data_table = "user_stats"
         self.character_data = "character_data"
         self.registered_users = set()
