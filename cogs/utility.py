@@ -47,12 +47,12 @@ class Utility(commands.Cog):
             (
                 r"https?://(www\.)?instagram\.com/reel/.+",
                 r"https?://(www\.)?instagram\.com/reel/", 
-                r"https://www.kkinstagram.com/reel/"
+                r"https://www.oginstagram.com/reel/"
             ),
             (
                 r"https?://(www\.)?instagram\.com/.+",
                 r"https?://(www\.)?instagram\.com/",
-                r"https://www.kkinstagram.com/"
+                r"https://www.oginstagram.com/"
             ),
             (
                 r"https?://(www\.)?reddit\.com/.+",

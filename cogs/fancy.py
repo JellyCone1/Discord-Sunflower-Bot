@@ -3,8 +3,6 @@ from discord.ext import commands, tasks
 from itertools import cycle
 
 
-
-
 class Fancy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

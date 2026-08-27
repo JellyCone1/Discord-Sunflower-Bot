@@ -63,9 +63,9 @@ class Moderation(commands.Cog):
         await self.limit_check(ctx, limit)
         await self.delete_message(ctx, limit)
 
-    @commands.Cog.listener()
-    async def on_member_join(self, member):
-        await member.send(f"Welcome to the server {member.name}")
+    # @commands.Cog.listener()
+    # async def on_member_join(self, member):
+    #     await member.send(f"Welcome to the server {member.name}")
 
 
     @commands.Cog.listener()
