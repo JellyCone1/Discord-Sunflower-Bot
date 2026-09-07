@@ -13,6 +13,8 @@ class MyButtonView(discord.ui.View):
 
 
 class Test(commands.Cog):
+    ENTITY_ID = 1164651057243238400
+
     def __init__(self, bot):
         self.bot = bot
 
