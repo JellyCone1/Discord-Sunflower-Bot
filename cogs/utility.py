@@ -35,6 +35,7 @@ async def download_image(url: str) -> Image.Image | None:
 class Utility(commands.Cog):
     # Class Attributes
     secret_role = "WPlace"
+    FixTweetID = 1164651057243238400
 
     def __init__(self, bot):
         self.bot = bot
@@ -82,6 +83,39 @@ class Utility(commands.Cog):
         return check
 
 
+    # def ignore_if_available_in_channel(self):
+    #     async def predicate(ctx: commands.Context) -> bool:
+    #         if not ctx.guild:
+    #             return True
+
+    #         target = ctx.guild.get_member(Utility.FixTweetID)
+
+    #         if target and target.status != discord.Status.offline:
+    #             # If its not offline then check its perms
+    #             perms = ctx.channel.permissions_for(target)
+    #             if perms.view_channel and perms.send_messages:
+    #                 return False
+
+    #         return True
+
+    #     return commands.check(predicate)
+
+
+    def ignore_if_available_in_channel(self, message: discord.Message):
+        if not message.guild:
+            return False  # If not a guild, do not ignore
+
+        target = message.guild.get_member(Utility.FixTweetID)
+
+        if target and target.status != discord.Status.offline:
+            # If its not offline then check its perms
+            perms = message.channel.permissions_for(target)
+            if perms.view_channel and perms.send_messages:
+                return True  # Ignore
+
+        return False
+
+
     @commands.command()
     async def ping(self, ctx):
         """Check the bot's latency."""
@@ -98,11 +132,14 @@ class Utility(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        embeddable_url = None
-
         if message.author.bot:
             return
+
+        if self.ignore_if_available_in_channel(message):
+            return
         
+        embeddable_url = None
+
         for full_url, regex, replacement in self.social_media_url_regex_list:
             match = re.search(full_url, message.content)
 
