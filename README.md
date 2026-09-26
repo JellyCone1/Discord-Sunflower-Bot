@@ -187,5 +187,4 @@ If you'd like, I can also:
 
 ---
 
-Thank you for using Sunflower 🌻 — if you want, I can:
-- Add `.env.example` to the repo now,
+Thank you for using Sunflower 🌻
