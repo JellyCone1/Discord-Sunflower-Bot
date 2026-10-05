@@ -13,6 +13,10 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         print(f"{__name__} is online!")
 
+
+    # Define a wrapper function which checks if the command is invoked by admin role
+    
+
     def is_favorite(self, ctx):
         return not any(getattr(r.emoji, 'name', r.emoji) in ["⭐","star"] for r in ctx.reactions)
 
