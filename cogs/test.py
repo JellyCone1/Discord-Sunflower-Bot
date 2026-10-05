@@ -1,5 +1,6 @@
 from discord.ext import commands
 import discord
+from discord.ui import Button, View
 
 
 class MyButtonView(discord.ui.View):
@@ -13,7 +14,6 @@ class MyButtonView(discord.ui.View):
 
 
 class Test(commands.Cog):
-    ENTITY_ID = 1164651057243238400
 
     def __init__(self, bot):
         self.bot = bot
@@ -39,6 +39,15 @@ class Test(commands.Cog):
 
         if channel:
             await channel.send(f"Goodbye, {member.name} : {member.id} Hope to see you soon!")
+
+
+    @commands.command()
+    async def testing(self, ctx):
+        button = Button(label="Click me!", style=discord.ButtonStyle.green, emoji="<:catundespair:1303370289274683504>")
+        view = View()
+        view.add_item(button)  # add item
+        # view.remove_item(button) # remove item
+        await ctx.send("Hi!", view=view)
 
 
 async def setup(bot):

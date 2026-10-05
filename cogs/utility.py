@@ -101,9 +101,12 @@ class Utility(commands.Cog):
     #     return commands.check(predicate)
 
 
-    def ignore_if_available_in_channel(self, message: discord.Message):
+    def embed_settings(self, message: discord.Message):
         if not message.guild:
-            return False  # If not a guild, do not ignore
+            return False  # If a guild, do not ignore
+
+        if message.content.startswith(self.command_prefix):
+            return False  # Force Embed if starts with prefix
 
         target = message.guild.get_member(Utility.FixTweetID)
 
@@ -135,7 +138,7 @@ class Utility(commands.Cog):
         if message.author.bot:
             return
 
-        if self.ignore_if_available_in_channel(message):
+        if self.embed_settings(message):
             return
         
         embeddable_url = None
