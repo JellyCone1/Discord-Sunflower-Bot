@@ -1,5 +1,8 @@
+from typing import Any
+
 import discord
 from discord.ext import commands
+from discord.ui import Button, View
 import os
 import platform
 from pathlib import Path
@@ -14,6 +17,18 @@ from datetime import datetime, timezone
 from rapidfuzz import process, fuzz
 import time
 
+
+# class UmaButtonView(View):
+#     def __init__(self, cog, *, difficulty, caller_id, sandbox_state, web_id, timeout: float | None = 180):
+#         super().__init__(timeout=timeout)
+
+#         self.cog = cog
+#         self.difficulty = difficulty
+#         self.caller_id = caller_id
+#         self.sandbox_state = sandbox_state
+#         self.web_id = web_id
+        
+    
 class CharacterIndexView(discord.ui.View):
     def __init__(self, data, per_page=24):
         super().__init__(timeout=120)
@@ -385,16 +400,60 @@ class Umamusume(commands.Cog):
         ADMIN_UID=int(os.getenv('ADMIN_UID', 0))
         sandbox_state = bool(self.sandbox_users.get(ctx.author.id, False))
 
-        name_en, name_jp, reveal_url, outfit_url, key = await self.fetch_uma_data(difficulty=1, caller_id=ADMIN_UID, sandbox_state=sandbox_state) \
-            if web_id is None else await self.fetch_uma_data(difficulty=1, caller_id=ADMIN_UID, sandbox_state=sandbox_state, web_id=web_id)
+        class UmaButtonView(View):
+            @discord.ui.button(label="", style=discord.ButtonStyle.primary, emoji="🔄")
+            async def refresh(
+                view_self,
+                interaction: discord.Interaction,
+                button: discord.ui.Button
+            ):
+                
+                name_en, name_jp, reveal_url, outfit_url, key = (
+                    await self.fetch_uma_data(
+                        difficulty=1,
+                        caller_id=ADMIN_UID,
+                        sandbox_state=sandbox_state,
+                        web_id=web_id
+                    )
+                )
+
+                embed = discord.Embed(
+                    title=name_en,
+                    description=name_jp,
+                    color=0xFF00FF
+                )
+
+                embed.set_image(url=outfit_url)
+
+                await interaction.response.edit_message(
+                    embed=embed,
+                    view=view_self
+                )
+
+
+        name_en, name_jp, reveal_url, outfit_url, key = await self.fetch_uma_data(
+            difficulty=1, 
+            caller_id=ADMIN_UID, 
+            sandbox_state=sandbox_state
+            ) \
+            if web_id is None else await self.fetch_uma_data(
+                difficulty=1, 
+                caller_id=ADMIN_UID, 
+                sandbox_state=sandbox_state, 
+                web_id=web_id
+                )
         embed = discord.Embed(
             title=name_en,
             description=name_jp,
             color=0xFF00FF
         )
 
+        view = UmaButtonView()
+        if web_id is not None:
+            view.refresh.disabled = True
+
         embed.set_image(url=outfit_url)
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, view=view)
 
    
     @commands.command()
