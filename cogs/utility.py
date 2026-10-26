@@ -1,3 +1,5 @@
+import logging
+from dotenv import load_dotenv
 import os
 import discord 
 from discord.ext import commands
@@ -6,15 +8,32 @@ from PIL import Image
 import aiohttp
 import io
 import re
-from googletrans import Translator, LANGUAGES, LANGCODES
 from discord import app_commands
+from google.cloud import translate_v3 as translate
+# from googletrans import Translator, LANGUAGES, LANGCODES
 
+
+load_dotenv()
+logger = logging.getLogger("discord")
+PROJECT_ID = os.getenv("GCP_PROJECTID")
+
+if not PROJECT_ID:
+    raise RuntimeError("GCP_PROJECTID is missing from environment")
+
+LOCATION = "global"
+PARENT = f"projects/{PROJECT_ID}/locations/{LOCATION}"
+translation_client = translate.TranslationServiceAsyncClient()
+
+SUPPORTED_LANGUAGES: dict[str, str] | None = None
+
+# logger.info("Cloud Translation parent: %s", PARENT)
 
 def count_nontransparent_pixels(img: Image.Image) -> int:
     """Count Non-Transparent Pixels in an RGBA image."""
     img = img.convert("RGBA")
     pixels = img.getdata()
     return sum(1 for p in pixels if p[3] > 0)
+
 
 async def download_image(url: str) -> Image.Image | None:
     """
@@ -30,6 +49,43 @@ async def download_image(url: str) -> Image.Image | None:
                 return None
             data = io.BytesIO(await resp.read())
             return Image.open(data)
+
+
+async def translate_text(text: str, target_language: str):
+    """Translate Japanese text using Google Cloud Translation."""
+    
+    response = await translation_client.translate_text(
+        contents=[text], 
+        parent=PARENT, 
+        mime_type="text/plain",
+        target_language_code=target_language,
+    )
+
+    if not response.translations:
+        logger.error("Google Cloud returned no translations.")
+        raise ValueError("Google Cloud returned no translations.")
+
+    return response.translations[0]
+
+# Language Caching, fetch once and load valid LangCodes to memory
+# Check the docs below for a list of supported languages 
+# https://docs.cloud.google.com/translate/docs/list-supported-languages?utm_source=chatgpt.com&usertype=Advanced
+async def get_supported_languages() -> dict[str, str]:
+    global SUPPORTED_LANGUAGES
+
+    if SUPPORTED_LANGUAGES is None:
+        response = await translation_client.get_supported_languages(
+            parent= PARENT,
+            display_language_code= "en",
+        )
+
+        SUPPORTED_LANGUAGES = {
+            language.language_code.lower(): language.display_name
+            for language in response.languages
+            if language.support_target
+        }
+
+    return SUPPORTED_LANGUAGES
 
 
 class Utility(commands.Cog):
@@ -268,37 +324,72 @@ class Utility(commands.Cog):
 # <-------------------------------------------------------------------------------->
 
 
-    @app_commands.command(name='translate', description='Translate text using Google Translate')
+    @app_commands.command(name='translate', description='Translate text using Google Cloud Translation')
     @app_commands.describe(text="Text to translate", target_language="Target language (e.g. en, ja, fr)")
     async def translate(self, interaction: discord.Interaction, text: str, target_language: str = 'en'):
         GOOGLE_TRANSLATE_LOGO = "https://upload.wikimedia.org/wikipedia/commons/d/db/Google_Translate_Icon.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original"
         target_language = target_language.lower()
+        await interaction.response.defer(thinking=True)
+        
+        try:
+            supported_languages = await get_supported_languages()
 
-        if target_language not in LANGUAGES:
-            await interaction.response.send_message(
-                f"❌ `{target_language}` is not a supported language code.",
-                ephemeral=True
+            if target_language not in supported_languages:
+                logger.warning(f"Unsupported language code: {target_language}")
+                await interaction.followup.send(
+                    f"❌ `{target_language}` is not a supported language code.",
+                    ephemeral=True,
+                )
+                return
+
+            result = await translate_text(text, target_language)
+            translated_text = result.translated_text
+
+            source_code = result.detected_language_code.lower()
+
+            # Use the supported-language list for display names.
+            src = SUPPORTED_LANGUAGES.get(source_code, source_code)
+            dest = SUPPORTED_LANGUAGES.get(target_language, target_language)
+
+            logger.info(
+                "Translation completed: %s -> %s",
+                source_code,
+                target_language,
             )
-            return
 
+            embed = discord.Embed(
+                title=(
+                    f"Translated from {src.capitalize()} "
+                    f"to {dest.capitalize()}"
+                ),
+            )
 
-        async with Translator() as translator:
-            result = await translator.translate(text, dest=target_language)
-            src = LANGUAGES[str(result.src.lower())]
-            dest = LANGUAGES[str(result.dest.lower())]
+            embed.add_field(
+                name=f"{src.capitalize()}:",
+                value=f"```\n{text[:1000]}\n```",
+                inline=False,
+            )
 
-        embed = discord.Embed(
-            title=f"Translated from {src.capitalize()} to {dest.capitalize()}",
-        )
-        embed.add_field(name=f"{src.capitalize()}:", value=f"```{text}```", inline=False)
-        embed.add_field(name=f"{dest.capitalize()}:", value=f"```{result.text}```", inline=False)
+            embed.add_field(
+                name=f"{dest.capitalize()}:",
+                value=f"```\n{translated_text[:1000]}\n```",
+                inline=False,
+            )
 
-        embed.set_footer(
-            text="Google Translate", 
-            icon_url=GOOGLE_TRANSLATE_LOGO
-        )
+            embed.set_footer(
+                text="Google Translate",
+                icon_url=GOOGLE_TRANSLATE_LOGO,
+            )
 
-        await interaction.response.send_message(embed=embed)
+            # Send the result after deferring the interaction.
+            await interaction.followup.send(embed=embed)
+
+        except Exception:
+            logger.exception("Google Cloud translation failed")
+            await interaction.followup.send(
+                "❌ Translation failed. Please try again later.",
+                ephemeral=True,
+            )
     
 
     # ------------------ || UNUSED EXAMPLES || ------------------ #
