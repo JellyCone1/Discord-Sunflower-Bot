@@ -79,4 +79,4 @@ Hi username! You've successfully authenticated, but GitHub does not provide shel
 
 Learn about Fuzzy Search and Discord Buttons
 
-Incase, GCP Cloud Translation API gives a Permission Denied(reason: "SERVICE_DISABLED") even after you have pointed to the correct projectId in the .env file, You need to refresh your ADC(Application Default Credentials) to point the correct Project!
+Incase, GCP Cloud Translation API gives a Permission Denied(reason: "SERVICE_DISABLED") even after you have pointed to the correct projectId in the .env file, You need to refresh your ADC(Application Default Credentials) so it points the correct Project!
