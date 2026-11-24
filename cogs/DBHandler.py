@@ -13,7 +13,7 @@ class DBHandler(commands.Cog):
     async def on_ready(self):
         print(f"{__name__} is online!")
 
-    
+    # 
 
 async def setup(bot):
     await bot.add_cog(DBHandler(bot))

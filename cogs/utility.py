@@ -7,12 +7,17 @@ from PIL import Image
 import aiohttp
 import io
 import re
-from discord import app_commands
+from pathlib import Path
+import aiosqlite
+
+# from discord import app_commands
 # from googletrans import Translator, LANGUAGES, LANGCODES
 
 
 logger = logging.getLogger("discord")
-
+USER_DB = Path("../bot_user_db/user_data.db")
+SCHEMA_FILE = Path("./db_schemas/schema.sql")
+TABLE_NAME = "afk_status"
 
 def count_nontransparent_pixels(img: Image.Image) -> int:
     """Count Non-Transparent Pixels in an RGBA image."""
@@ -36,6 +41,75 @@ async def download_image(url: str) -> Image.Image | None:
             data = io.BytesIO(await resp.read())
             return Image.open(data)
 
+# Move to different module later
+async def _create_table_if_doesnt_exist(table_name: str) -> None:
+    """Create Table if it doesnt already exist"""
+
+    query = f"""
+        SELECT 
+            name from sqlite_schema 
+            WHERE type='table' 
+            AND name='{table_name}'
+    """
+
+    # AFK: Dinner Moment, # AFK Since: Time
+    # create_table_query = f"""
+        
+    # """
+
+
+    async with aiosqlite.connect(USER_DB) as db:
+        async with db.execute(query) as cursor:
+            data = await cursor.fetchone()
+
+    if not data:
+        print(f"Table Does not exist with name {table_name}. Creating Table...")
+
+        # Create Table
+        await db.executescript(SCHEMA_FILE.read_text(encoding="utf-8"))
+        await db.commit()
+        
+        print(f"Table Created: {table_name}")
+    else:
+        print(f"Table Exists: {table_name}")
+
+
+async def _get_view(table_name: str):
+    query = f"""
+        SELECT 
+            user_id, 
+            guild_id
+        FROM {table_name} 
+    """
+
+    async with aiosqlite.connect(USER_DB) as db:
+        async with db.execute(query) as cursor:
+            row = cursor.fetchall()
+
+    return row
+
+
+async def _add_or_update_entry(table_name: str, afk_staus: str) -> None:
+    insert_query = f"""
+        INSERT INTO {table_name} (
+            user_id,
+            guild_id,
+            afk_status,
+            afk_since,
+            notify_enabled,
+            updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+    """
+
+    view = _get_view(table_name)
+
+    async with aiosqlite.connect(USER_DB) as db:
+        async with db.execute(insert_query) as cursor:
+            row = cursor.fetchall()
+# def check_afk():
+
+
 
 class Utility(commands.Cog):
     # Class Attributes
@@ -51,26 +125,31 @@ class Utility(commands.Cog):
         # REGEX Patterns for Various Social media Platforms
         self.social_media_url_regex_list = [
             (
+                "Instagram",
                 r"https?://(www\.)?instagram\.com/reel/.+",
                 r"https?://(www\.)?instagram\.com/reel/", 
                 r"https://www.oginstagram.com/reel/"
             ),
             (
+                "Instagram"
                 r"https?://(www\.)?instagram\.com/.+",
                 r"https?://(www\.)?instagram\.com/",
                 r"https://www.oginstagram.com/"
             ),
             (
+                "Reddit"
                 r"https?://(www\.)?reddit\.com/.+",
                 r"https?://(www\.)?reddit\.com/",
                 r"https://www.vxreddit.com/"
             ),
             (
+                "X"
                 r"https?://(www\.)?x\.com/.+",
                 r"https?://(www\.)?x\.com/",
                 r"https://www.fxtwitter.com/"
             ),
             (
+                "TikTok"
                 r"https?://(www\.)?tiktok\.com/.+",
                 r"https?://(www\.)?tiktok\.com/",
                 r"https://www.vxtiktok.com/"
@@ -110,8 +189,11 @@ class Utility(commands.Cog):
         if not message.guild:
             return False  # If a guild, do not ignore
 
+        if message.content.startswith(f"{self.command_prefix}force "):
+            return False  # Ignore if it starts with the command prefix for the f command
+
         if message.content.startswith(self.command_prefix):
-            return False  # Force Embed if starts with prefix
+            return True  # Ignore if it starts with the command prefix
 
         target = message.guild.get_member(Utility.FixTweetID)
 
@@ -148,7 +230,7 @@ class Utility(commands.Cog):
         
         embeddable_url = None
 
-        for full_url, regex, replacement in self.social_media_url_regex_list:
+        for social, full_url, regex, replacement in self.social_media_url_regex_list:
             match = re.search(full_url, message.content)
 
             if match:
@@ -164,9 +246,11 @@ class Utility(commands.Cog):
 
         if embeddable_url:
             await message.edit(suppress=True)
-            await message.reply(f"Here is the embeddable link:\n{embeddable_url}", mention_author=False)
-            
-            await self.bot.process_commands(message)
+            await message.reply(
+                f"Here is the embeddable link:\n[{social}]({embeddable_url})", 
+                mention_author=False
+            )
+            return
 
 
     @commands.command()
@@ -265,14 +349,22 @@ class Utility(commands.Cog):
 
     
     @commands.command()
-    async def memclear(self, ctx):
+    async def memclear(self, ctx: commands.Context):
         file_dir_name = str(ctx.guild.id)
         full_path = os.path.join("memory", file_dir_name)
         os.remove(full_path)
 
 # <-------------------------------------------------------------------------------->
 
+    @commands.command()
+    async def afk(self, ctx: commands.Context, afk_status: str) -> None:
+        """Set your AFK status in the database."""
+        
+        # Check DB if the user already has an AFK Status set
+        await _create_table_if_doesnt_exist(TABLE_NAME)  # Ensure the table exists
 
+
+        await ctx.reply(f"**Your AFK Status has been set to:** {afk_status}")
 
     
 
@@ -283,7 +375,7 @@ class Utility(commands.Cog):
     
    
     @commands.command()
-    async def assign(self, ctx, member: discord.Member = None):
+    async def assign(self, ctx: commands.Context, member: discord.Member = None):
         """
             Assigns the secret role to a mentioned member.
             Usage: s!assign @member
@@ -304,7 +396,7 @@ class Utility(commands.Cog):
 
    
     @commands.command()
-    async def remove(self, ctx, member: discord.Member = None):
+    async def remove(self, ctx: commands.Context, member: discord.Member = None):
         """
             Removes the secret role from a mentioned member.
             Usage: s!remove @member
