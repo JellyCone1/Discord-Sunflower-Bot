@@ -131,28 +131,28 @@ class Utility(commands.Cog):
                 r"https://www.oginstagram.com/reel/"
             ),
             (
-                "Instagram"
+                "Instagram",
                 r"https?://(www\.)?instagram\.com/.+",
                 r"https?://(www\.)?instagram\.com/",
                 r"https://www.oginstagram.com/"
             ),
             (
-                "Reddit"
+                "Reddit",
                 r"https?://(www\.)?reddit\.com/.+",
                 r"https?://(www\.)?reddit\.com/",
                 r"https://www.vxreddit.com/"
             ),
             (
-                "X"
+                "X",
                 r"https?://(www\.)?x\.com/.+",
                 r"https?://(www\.)?x\.com/",
                 r"https://www.fxtwitter.com/"
             ),
             (
-                "TikTok"
+                "TikTok",
                 r"https?://(www\.)?tiktok\.com/.+",
                 r"https?://(www\.)?tiktok\.com/",
-                r"https://www.vxtiktok.com/"
+                r"https://a.tnktok.com/"
             )
         ]
 
