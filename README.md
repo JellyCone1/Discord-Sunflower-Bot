@@ -1,190 +1,196 @@
-# Discord Sunflower Bot v0.4.1
+# Discord Sunflower Bot
 
-The repository for Hamsteria's Discord Server custom personal bot for moderation, utilities, and media playback.
+A Python Discord bot for moderation, media utilities, Umamusume character games, and server management for Hamsteria.
 
-🌻 Welcome to Sunflower!
-
-Sunflower (command prefix: `s!`) is a lightweight, Python-based Discord bot created to help moderate and manage the Hamsteria server. It includes moderation utilities, fun/utility commands, image tools, persistent player data, and music playback.
-
----
-
-## Table of contents
-
-- [Features](#features)
-- [Commands](#commands)
-  - [Prefix commands (s!)](#prefix-commands-s)
-  - [Slash (/) commands](#slash-commands)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the bot](#running-the-bot)
-- [Development & Contributing](#development--contributing)
-- [Troubleshooting](#troubleshooting)
-- [Changelog](#changelog)
-- [Credits](#credits)
-- [License](#license)
-
----
+🌻 Sunflower uses the `s!` prefix for text commands and Discord slash commands for supported features.
 
 ## Features
 
-- Moderation helpers: selective message deletion and purge commands
-- Image utilities: pixel counting for attached images
-- Fun & utility commands: coin flip, random numbers, simple chat replies
-- Persistent Player Data Storage: automatically records and stores Player's Data for future references
-- Stats view: display user statistics and activity summaries
-- Uma character search: search for Umamusume Characters to get their `web_id` to view them as an argument to `s!uma_r web_id`
-- Basic music controls via slash commands (YouTube audio streaming)
-- Extensible architecture: add new cogs/modules to extend functionality
-
+- Moderation with message purging and automatic filtering
+- Umamusume character browsing and guessing games
+- Persistent player statistics and sandbox mode
+- Google Cloud Translation support
+- YouTube audio playback, queue controls, and media downloading
+- Social media embed replacement for Instagram, Reddit, X, and TikTok
+- Pixel counting for attached images or image URLs
+- Utility commands, polls, role management, and memory notes
 
 ## Commands
 
-Note: The exact behavior and set of commands depend on which cogs/modules are loaded. Below are the commands present in this version of the project.
+### Prefix commands (`s!`)
 
-### Prefix commands (s!)
+| Command | Description |
+|---|---|
+| `s!hello` | Greet the bot. |
+| `s!ping` | Display the bot's latency. |
+| `s!reply <message>` | Reply to the invoking message. |
+| `s!pc [image URL]` | Count non-transparent pixels in an attachment or URL. |
+| `s!cf` | Flip a coin. |
+| `s!random <lower> <upper>` | Generate a random integer in the inclusive range. |
+| `s!purge <count>` | Delete recent messages while preserving starred messages. |
+| `s!purgeall <count>` | Delete recent messages, including starred messages. |
+| `s!uma_r [web_id]` | Display a random character or a character by web ID. |
+| `s!whoisthatuma <difficulty> [web_id]` | Start a character guessing game. |
+| `s!ci [search_term]` | Browse or fuzzy-search the character index. |
+| `s!stats [user]` | Display player statistics. |
+| `s!sandbox [flag]` | Toggle sandbox mode; use `?` to check its status. |
+| `s!user_reset <uid> --soft\|--hard` | Reset or delete a player's stored data. Admin only. |
+| `s!dl <url>` | Download a supported video within Discord's file-size limit. |
+| `s!rdl <url>` | Download media from Reddit. |
+| `s!qt [language]` | Translate the message you reply to, defaulting to English. |
+| `s!memwrite <text>` | Append text to the server memory file. |
+| `s!memlist` | Display the server memory file. |
+| `s!memclear` | Clear the server memory file. |
+| `s!afk <status>` | Set an AFK status. |
+| `s!poll <question>` | Create a yes/no poll. |
+| `s!assign @member` | Assign the `WPlace` role. |
+| `s!remove @member` | Remove the `WPlace` role. |
+| `s!secret` | Restricted role command. |
+| `s!dm <message>` | Send the provided message through a DM. |
 
-- `s!hello` — Bot replies and greets you.
-- `s!reply <your-message>` — Bot echoes or replies with the provided message.
-- `s!pc` — Pixel Count (non-transparent) for an attached image or image URL.
-- `s!cf` — Coin flip (CoinFlip).
-- `s!random <lower:int> <upper:int>` — Returns a random integer between lower and upper (inclusive).
-- `s!purge <count:int>` — Delete up to <count> recent messages, excluding starred (⭐) messages.
-- `s!purgeall <count:int>` — Delete up to <count> recent messages (including starred messages).
-- `s!whoisthatuma {ids}` — UmaGuesser: guess umamusume character(s) by id(s).
-- `s!uma_r` — Shows a random umamusume character.
-- `s!uma_r <web_id>` — Shows an umamusume character with supplied `web_id`.
-- `s!ci <search_term>` — Search for umamusume characters by name.
-- `s!stats [user]` — Display user statistics and activity summary.
-- `s!sb` — Enter Sandbox mode, in Sandbox mode, your Stats are not affected upon any `whoisthatuma` calls
+Prefix command aliases include `s!ur` for `s!user_reset`, `s!ci`, `s!chr_idx` for `s!character_index`, `s!sb` or `s!sbox` for `s!sandbox`, `s!dl` for `s!download`, and `s!rdl` for `s!redditdownload`.
 
-### Slash (/) commands
+### Slash commands
 
-- `/play <search_query or url>` — Stream audio from YouTube (audio only).
-- `/pause` — Pause the current song.
-- `/skip` — Skip the currently playing song.
-- `/resume` — Resume a paused song.
-- `/clear` — Clear the music queue and stop playback (does not disconnect from voice channel).
-- `/disconnect` — Disconnect the bot from the voice channel.
-- `/translate [text] [lang_code]` — Translates `text` to target `lang_code`, default `lang_code` is `en`(English)
----
+| Command | Description |
+|---|---|
+| `/play <query_or_url>` | Play or queue a YouTube song. |
+| `/pause` | Pause playback. |
+| `/resume` | Resume playback. |
+| `/skip` | Skip the current song. |
+| `/queue` | View the current and queued tracks. |
+| `/clear` | Stop playback and clear the queue. |
+| `/disconnect` | Disconnect from the voice channel. |
+| `/translate <text> [target_language]` | Translate text with Google Cloud Translation. |
+
+## Automatic features
+
+- Starred (`⭐`) messages are preserved by `s!purge`.
+- Messages containing a configured prohibited word are deleted with a short notification.
+- Instagram, Reddit, X, and TikTok links are replaced with embed-friendly variants where available.
+- The bot automatically loads every Python cog from `cogs/` at startup.
+- Slash commands are synchronized when the bot becomes ready.
 
 ## Installation
 
 1. Clone the repository:
 
-   ```
+   ```bash
    git clone https://github.com/JellyCone1/Discord-Sunflower-Bot.git
    cd Discord-Sunflower-Bot
    ```
 
-2. Create and activate a virtual environment (recommended):
+2. Create and activate a virtual environment:
 
-   ```
+   ```bash
    python -m venv .venv
    ```
 
-   # Windows
-   Disable PowerShell script execution restrictions only for your current terminal session
-   ```
-   Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+   Windows:
+
+   ```powershell
+   .venv\Scripts\Activate.ps1
    ```
 
-   Activate your Virtual Environment 
-   ```
-   .venv\Scripts\activate
-   ```
+   macOS or Linux:
 
-   # macOS / Linux
-   Activate your Virtual Environment
-   ```
+   ```bash
    source .venv/bin/activate
    ```
 
-4. Install dependencies:
+3. Install dependencies:
 
-   ```pip install -r requirements.txt```
+   ```bash
+   python -m pip install -r requirements.txt
+   ```
 
-If the repository uses Poetry or pyproject.toml, follow that project's preferred workflow instead.
+4. Install FFmpeg and ensure it is available at:
 
----
+   - Windows: `bin/ffmpeg/ffmpeg.exe`
+   - Linux: `/usr/bin/ffmpeg`
+
+FFmpeg is required for voice playback and voice hints.
 
 ## Configuration
 
-Sunflower needs a Discord bot token and a few optional configuration values. You can provide these via a `.env` file or environment variables.
+Create a `.env` file in the project root:
 
-Create a `.env` file in the project root with the following (example):
-
-```
-DISCORD_TOKEN=your_discord_bot_token_here
-ADMIN_UID=your_uid
-```
-
-- DISCORD_TOKEN — (required) Your bot token from the Discord Developer Portal.
-- ADMIN_UID — (required) for soft/hard deletion of player stats
-
----
-
-## Running the bot
-
-Just run `main.py` following the Example below in your terminal of choice vv
-
-Example:
-
-```
-python ./main.py
+```dotenv
+DISCORD_TOKEN=your_discord_bot_token
+ADMIN_UID=your_discord_user_id
+GCP_PROJECTID=your_google_cloud_project_id
 ```
 
-Run the command from within the activated virtual environment after installing dependencies and setting configuration.
+| Variable | Required | Purpose |
+|---|---:|---|
+| `DISCORD_TOKEN` | Yes | Discord bot token from the Developer Portal. |
+| `ADMIN_UID` | Yes | Authorizes the administrator-only player-data reset commands and restricted character views. |
+| `GCP_PROJECTID` | For translation | Google Cloud project used by the Translation API. |
 
----
+Google Cloud credentials must also be configured for the Translation API through the standard Google application credentials mechanism.
 
-## Development & Contributing
+The Umamusume database is loaded from `data/character_endpoint.db`. Player data is stored in the external SQLite database configured in `cogs/umamusume.py` and requires `../bot_user_db/user_data.db` to exist and contain the expected schema.
 
-Contributions are welcome. Suggested workflow:
+Invite the bot with permission to:
 
-1. Fork the repository.
-2. Create a feature branch: `git checkout -b feat/my-feature`.
-3. Implement changes and add tests where applicable.
-4. Open a pull request with a clear description of changes.
+- Read and send messages
+- Read message history
+- Manage messages for purge commands
+- Connect and speak in voice channels
+- Create and use application commands
+- View members and message content
 
-Please follow any existing contribution guidelines or a CODE_OF_CONDUCT if present.
+## Running
 
-If you'd like, I can also:
-- Add a `.env.example` file with the recommended keys, or
+```bash
+python main.py
+```
 
----
+The bot loads all `.py` files in `cogs/` and synchronizes application commands in `on_ready`.
+
+## Umamusume game
+
+- `whoisthatuma` supports difficulty levels `1`, `2`, `3`, `42`, and `43`.
+- Games provide three guesses and optional hints, reveals, give-ups, skips, and timeouts.
+- Points and performance counters are persisted outside sandbox mode.
+- Sandbox mode disables player-stat updates so users can practice freely.
+- Character search uses fuzzy matching and paginated character-index results.
 
 ## Troubleshooting
 
-- Bot does not start:
-  - Ensure `DISCORD_TOKEN` is set and valid.
-  - Confirm the bot is invited to your server with appropriate permissions.
-  - Run the bot in a terminal to see error tracebacks.
+- **Bot fails to start:** verify `DISCORD_TOKEN`, dependencies, and all required environment variables.
+- **Translation is unavailable:** confirm `GCP_PROJECTID` and Google Cloud credentials.
+- **Music does not play:** verify Connect/Speak permissions and the FFmpeg installation.
+- **Purge errors:** grant the bot Manage Messages and access to message history.
+- **Umamusume features fail:** verify that `data/character_endpoint.db` exists and that `../bot_user_db/user_data.db` is reachable with the expected tables.
+- **YouTube or downloads fail:** update `yt-dlp` and provide `cookies.txt` only if required by the target platform.
 
-- Commands fail or raise permissions errors:
-  - Verify bot permissions and role hierarchy in your server.
-  - Check command-specific permission checks or role IDs in configuration.
+## Development
 
-- Music/voice problems:
-  - Make sure the bot has Connect/Speak permissions for the voice channel.
-  - Ensure the system running the bot has necessary audio/ffmpeg dependencies installed.
+Contributions are welcome:
 
----
+```bash
+git checkout -b feat/my-feature
+```
+
+Make focused changes, test the affected cog with a Discord test server, and open a pull request describing the behavior and configuration requirements.
 
 ## Changelog
 
-- v0.1.1 — Initial public readme content and early command set.
-- v0.2.0 — Added UmaGuesser commands and clarified purge behavior; updated README.
-- v0.3.0 — Added Persistent Player Data Storage, Stats View, and uma-search functionality.
-- v0.4.1 — Added Sandbox Mode, Balance Changes and minor bugfixes
-
----
+- **Latest:** Added Google Cloud Translation slash and quick-reply commands.
+- **Latest:** Added queue, media download, Reddit download, and improved embed replacement utilities.
+- **v0.4.1:** Added Umamusume sandbox mode and updated player-stat balances.
+- **v0.3.0:** Added persistent player data, statistics, character search, and character index.
+- **v0.2.0:** Added Umamusume guessing commands and improved purge behavior.
+- **v0.1.1:** Added the initial moderation and utility command set.
 
 ## Credits
 
-- Maintainer: JellyCone1
+- Maintainer: [JellyCone1](https://github.com/JellyCone1)
 - Built for: Hamsteria Discord Server
+- Translation: Google Cloud Translation
+- Media extraction: yt-dlp
 
----
+## License
 
-Thank you for using Sunflower 🌻
+Distributed under the MIT License. See [LICENSE](LICENSE) for details.
