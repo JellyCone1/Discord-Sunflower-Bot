@@ -3,12 +3,13 @@ import os
 import discord 
 from discord.ext import commands
 from random import choice, randint, shuffle
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import aiohttp
 import io
 import re
 from pathlib import Path
 import aiosqlite
+from typing import Union, Optional
 
 # from discord import app_commands
 # from googletrans import Translator, LANGUAGES, LANGCODES
@@ -18,6 +19,113 @@ logger = logging.getLogger("discord")
 USER_DB = Path("../bot_user_db/user_data.db")
 SCHEMA_FILE = Path("./db_schemas/schema.sql")
 TABLE_NAME = "afk_status"
+
+
+BACKGROUND = Path("data/welcome/bg/bg.jpg")
+FONT_NAME = Path("data/welcome/font/Mantinia Regular.otf")
+FONT_WELCOME = Path("data/welcome/font/Mantinia Regular.otf")
+WELCOME_TEXT = "WELCOME TO THE SERVER"
+
+# Layout, as fractions of the background height (tuned to the reference card)
+AVATAR_SIZE = 0.38      # avatar diameter
+AVATAR_CY = 0.22        # avatar centre y
+NAME_CY = 0.50          # username centre y
+WELCOME_CY = 0.585      # welcome text centre y
+NAME_FONT = 0.09
+WELCOME_FONT = 0.065
+MAX_TEXT_WIDTH = 0.80   # fraction of background width before the name wraps
+LINE_SPACING = 1.15     # line height of wrapped name, as a multiple of the name font size
+DARKEN = 0.45           # 0 = untouched background, 1 = black
+
+
+async def _create_welcome_image(user: Union[discord.User, discord.Member]) -> io.BytesIO:
+    avatar_asset: discord.Asset = user.display_avatar
+
+    avatar_bytes: bytes = await avatar_asset.with_format("png").with_size(1024).read()
+    username = user.global_name if user.global_name else user.name
+
+    return await _create_static_welcome(
+        avatar_bytes, username
+    )
+
+
+async def _create_static_welcome(data: bytes, username: str) -> io.BytesIO:
+    """Build the welcome card. avatar: PNG BytesIO. Returns a PNG BytesIO."""
+    avatar = io.BytesIO(data)
+    avatar.seek(0)
+    fg = Image.open(avatar).convert("RGBA")
+    bg = Image.open(BACKGROUND).convert("RGBA")
+    w, h = bg.size
+ 
+    # Darken the background
+    bg = Image.alpha_composite(bg, Image.new("RGBA", bg.size, (0, 0, 0, int(255 * DARKEN))))
+ 
+    # Circular avatar, centred horizontally near the top
+    d = int(h * AVATAR_SIZE)
+    fg = circle_crop(fg, d)
+    bg.paste(fg, ((w - d) // 2, int(h * AVATAR_CY - d / 2)), fg)
+ 
+    # Text (anchor "mm" = centred on the point, so no manual bbox maths)
+    draw = ImageDraw.Draw(bg)
+    name_font = load_font(FONT_NAME, int(h * NAME_FONT))
+    welcome_font = load_font(FONT_WELCOME, int(h * WELCOME_FONT))
+ 
+    lines = wrap_text(draw, username, name_font, w * MAX_TEXT_WIDTH)
+    line_h = h * NAME_FONT * LINE_SPACING
+    for i, line in enumerate(lines):
+        draw.text((w / 2, h * NAME_CY + i * line_h), line, fill="white", font=name_font, anchor="mm")
+ 
+    # The welcome line sits below however many lines the name needed
+    welcome_y = h * WELCOME_CY + (len(lines) - 1) * line_h
+    draw.text((w / 2, welcome_y), WELCOME_TEXT, fill="white", font=welcome_font, anchor="mm")
+ 
+    out = io.BytesIO()
+    bg.convert("RGB").save(out, "PNG")
+    out.seek(0)
+    return out
+
+def load_font(path: Path, size: int):
+    try:
+        return ImageFont.truetype(str(path), size)
+    except OSError:
+        print(f"Could not load font at {path}. Using default font instead.")
+        try:
+            return ImageFont.load_default(size)  # Pillow >= 10.1
+        except TypeError:
+            return ImageFont.load_default()
+
+
+def wrap_text(draw, text, font, max_width):
+    """Wrap text to max_width: break at spaces where possible, otherwise mid-word."""
+    lines, current = [], ""
+    for word in text.split(" "):
+        candidate = f"{current} {word}".strip()
+        if draw.textlength(candidate, font=font) <= max_width:
+            current = candidate
+            continue
+        if current:
+            lines.append(current)
+            current = ""
+        for ch in word:  # a single long word (e.g. snake_case names): split by character
+            if not current or draw.textlength(current + ch, font=font) <= max_width:
+                current += ch
+            else:
+                lines.append(current)
+                current = ch
+    if current:
+        lines.append(current)
+    return lines
+
+
+def circle_crop(img, diameter):
+    """Resize to a square and apply an anti-aliased circular alpha mask."""
+    img = img.resize((diameter, diameter), Image.LANCZOS)
+    ss = 4  # supersample the mask for smooth edges
+    mask = Image.new("L", (diameter * ss, diameter * ss), 0)
+    ImageDraw.Draw(mask).ellipse((0, 0, diameter * ss - 1, diameter * ss - 1), fill=255)
+    img.putalpha(mask.resize((diameter, diameter), Image.LANCZOS))
+    return img
+
 
 def count_nontransparent_pixels(img: Image.Image) -> int:
     """Count Non-Transparent Pixels in an RGBA image."""
@@ -271,6 +379,73 @@ class Utility(commands.Cog):
                 mention_author=False
             )
             return
+
+
+    @commands.command(name="avatar", aliases=["av", "pfp"])
+    async def avatar(self, ctx: commands.Context, *, user: discord.User = commands.Author):
+        """Download a user's avatar. Usage: s!avatar [mention | ID | username]"""
+        if ctx.guild:
+            user = ctx.guild.get_member(user.id) or user
+            if isinstance(user, discord.User):
+                try:
+                    user = await ctx.guild.fetch_member(user.id)
+                except discord.HTTPException:
+                    pass  # not in this server: use the global avatar
+
+        asset = user.display_avatar.with_size(1024)
+        ext = "gif" if asset.is_animated() else "png"
+        asset = asset.with_format(ext)
+
+        async with ctx.typing():
+            try:
+                file = await asset.to_file(filename=f"avatar_{user.id}.{ext}")
+                await ctx.send(f"Avatar of **{user}**", file=file)
+            except discord.HTTPException:
+                # Download failed or file is too large to upload: send the link instead
+                await ctx.send(f"Couldn't attach the file. Direct link: {asset.url}")
+
+    @avatar.error
+    async def avatar_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send("User not found. Try a mention or user ID.")
+        else:
+            raise error  # -> Goes to on_command_handler if it exists else goes to default_error_handler (traceback to your terminal)
+
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        WELCOME_CHANNEL_ID = 873991280600957001 if member.guild.id == 873991280600957001 else 1570069436029739021
+        RULES_CHANNEL_ID = 931587525267558400
+        SELF_ROLE_CHANNEL_ID = 1062800095558500422
+        GENERAL_CHANNEL_ID = 873991280600957001
+        
+        username = member.global_name if member.global_name else member.name
+        member_count = member.guild.member_count
+
+        filestream: io.BytesIO = await _create_welcome_image(member)
+
+        welcome_file = discord.File(fp=filestream, filename="welcome.png")
+
+        channel = member.guild.get_channel(WELCOME_CHANNEL_ID)
+        if isinstance(channel, discord.TextChannel):
+            try:
+                await channel.send(file=welcome_file)
+                await channel.send(
+f"""
+🎉 Welcome to {member.guild.name}, {username}! 🎉
+
+Hey {member.mention}, we're so happy to have you join our community! You're member #{member_count} in our growing server.
+
+Here's how to get started:
+📜 Check out the rules: Make sure to read <#{RULES_CHANNEL_ID}>.
+🎭 Pick your roles: Head over to <#{SELF_ROLE_CHANNEL_ID}> to personalize your experience.
+💬 Say hello: Introduce yourself in <#{GENERAL_CHANNEL_ID}> and let's get to know you!
+
+We're glad you're here, let's make some great memories together! 🚀
+"""
+                )
+            except discord.Forbidden:
+                print("Missing permissions to send to the welcome channel.")
 
 
     @commands.command()
