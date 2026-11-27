@@ -414,7 +414,7 @@ class Utility(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        WELCOME_CHANNEL_ID = 873991280600957001 if member.guild.id == 873991280600957001 else 1570069436029739021
+        WELCOME_CHANNEL_ID = 931591015092060230 if member.guild.id == 873991280600956998 else 1570069436029739021
         RULES_CHANNEL_ID = 931587525267558400
         SELF_ROLE_CHANNEL_ID = 1062800095558500422
         GENERAL_CHANNEL_ID = 873991280600957001
