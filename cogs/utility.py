@@ -126,33 +126,33 @@ class Utility(commands.Cog):
         self.social_media_url_regex_list = [
             (
                 "Instagram",
-                r"https?://(www\.)?instagram\.com/reel/.+",
-                r"https?://(www\.)?instagram\.com/reel/", 
-                r"https://www.oginstagram.com/reel/"
-            ),
-            (
-                "Instagram",
-                r"https?://(www\.)?instagram\.com/.+",
-                r"https?://(www\.)?instagram\.com/",
-                r"https://www.oginstagram.com/"
+                r"(?P<base>https?://(?:www\.)?instagram\.com/)"
+                r"(?:(?P<by>[a-zA-Z0-9_.]+)/)?"
+                r"(?P<type>p|reel|tv)/"
+                r"(?P<shortcode>[a-zA-Z0-9_-]+)/?",
+                "https://www.oginstagram.com/",
+                "OGInstagram"
             ),
             (
                 "Reddit",
-                r"https?://(www\.)?reddit\.com/.+",
-                r"https?://(www\.)?reddit\.com/",
-                r"https://www.vxreddit.com/"
+                r"(?P<base>https?://(?:www\.)?reddit\.com/)"
+                r"(?P<by>r/[a-zA-Z0-9_]+)/.+",
+                "https://www.vxreddit.com/",
+                "vxreddit"
             ),
             (
-                "X",
-                r"https?://(www\.)?x\.com/.+",
-                r"https?://(www\.)?x\.com/",
-                r"https://www.fxtwitter.com/"
+                "Tweet",
+                r"(?P<base>https?://(?:www\.)?x\.com/)"
+                r"(?P<by>[a-zA-Z0-9_]+)/.+",
+                "https://www.fxtwitter.com/",
+                "FxTwitter"
             ),
             (
                 "TikTok",
-                r"https?://(www\.)?tiktok\.com/.+",
-                r"https?://(www\.)?tiktok\.com/",
-                r"https://a.tnktok.com/"
+                r"(?P<base>https?://(?:www\.)?tiktok\.com/)"
+                r"(?P<by>@[a-zA-Z0-9_]+)/.+",
+                "https://a.tnktok.com/",
+                "Tnktok"
             )
         ]
 
@@ -229,25 +229,45 @@ class Utility(commands.Cog):
             return
         
         embeddable_url = None
+        urls = []
 
-        for social, full_url, regex, replacement in self.social_media_url_regex_list:
-            match = re.search(full_url, message.content)
+        for social, url_regex, replacement, service in self.social_media_url_regex_list:
+            match = re.search(url_regex, message.content)
 
-            if match:
-                embeddable_url = re.sub(
-                    regex,
-                    replacement,
-                    match.group()
-                )
+            if not match:
+                continue
 
-                print(re.compile(regex).pattern)
-                print(re.compile(regex).search(message.content))
-                break
+            groups = match.groupdict()
+
+            full_url = match.group()
+            base = groups["base"]
+
+            by = groups.get("by")
+
+            embeddable_url = replacement + full_url[len(base):]
+            urls.append(f"[{social}](<{full_url}>)")
+            
+            if by:
+                display_by = by if social == "Reddit" else f"@{by}"
+                social_by = f"{base}{by}/"
+
+                urls.append(f"[{display_by}](<{social_by}/>)")
+
+            urls.append(f"[{service}]({embeddable_url})")
+            break
 
         if embeddable_url:
-            await message.edit(suppress=True)
+            try:
+                await message.edit(suppress=True)
+                print(f"[Embed] Suppressed successfully: {message.id}")
+            except discord.Forbidden:
+                print(f"[Embed] Permission denied: {message.id}")
+
+            except discord.HTTPException as e:
+                print(f"[Embed] HTTP error: {e}")
+
             await message.reply(
-                f"Here is the embeddable link:\n[{social}]({embeddable_url})", 
+                " • ".join(filter(None, urls)),
                 mention_author=False
             )
             return
